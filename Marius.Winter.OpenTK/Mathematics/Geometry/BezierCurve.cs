@@ -203,11 +203,12 @@ public struct BezierCurve
     {
         Vector2 r = default;
         float c = 1 - t;
+        float temp;
         int i = 0;
 
         foreach (var pt in points)
         {
-            var temp = MathHelper.BinomialCoefficient
+            temp = MathHelper.BinomialCoefficient
                 (
                     points.Count - 1, i) * (MathF.Pow(t, i) * MathF.Pow(c, points.Count - 1 - i)
                 );
@@ -247,11 +248,12 @@ public struct BezierCurve
     {
         Vector2 r = default;
         float c = 1 - t;
+        float temp;
         int i = 0;
 
         foreach (var pt in points)
         {
-            var temp = MathHelper.BinomialCoefficient
+            temp = MathHelper.BinomialCoefficient
                 (
                     points.Count - 2, i) * (MathF.Pow(t, i) * MathF.Pow(c, points.Count - 2 - i)
                 );

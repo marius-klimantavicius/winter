@@ -38,8 +38,9 @@ internal static partial class LibX11
         }
     }
 
-    [DllImport(X11, EntryPoint = "XGetErrorText", CallingConvention = CallingConvention.Cdecl)]
-    internal static extern unsafe void XGetErrorText_(XDisplayPtr display, int code, [Out] byte* buffer_return, int length);
+    [LibraryImport(X11, EntryPoint = "XGetErrorText")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    internal static unsafe partial void XGetErrorText_(XDisplayPtr display, int code, byte* buffer_return, int length);
 
     [LibraryImport(X11)]
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]

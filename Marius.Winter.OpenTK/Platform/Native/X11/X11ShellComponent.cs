@@ -237,6 +237,7 @@ public class X11ShellComponent : IShellComponent
     /// <inheritdoc/>
     public BatteryStatus GetBatteryInfo(out BatteryInfo batteryInfo)
     {
+        bool setAC = false;
         bool onAC = false;
         foreach (string dir in Directory.EnumerateDirectories("/sys/class/power_supply/"))
         {
@@ -245,7 +246,7 @@ public class X11ShellComponent : IShellComponent
             {
                 string? online = ReadPowerFile(dir, "online");
                 onAC = (online == "1\n");
-                var setAC = true;
+                setAC = true;
                 break;
             }
         }

@@ -202,7 +202,7 @@ public class Demo
 		vg.TextAligned(fontIcons, ICON_CHECK, x + 9 + 2, y + h * 0.5f, TextHorizontalAlignment.Center, TextVerticalAlignment.Center);
 	}
 
-	public void drawButton(NvgContext vg, string preicon, string text, float x, float y, float w, float h, Color col)
+	public void drawButton(NvgContext vg, string? preicon, string text, float x, float y, float w, float h, Color col)
 	{
 		var cornerRadius = 4.0f;
 		float iw = 0;

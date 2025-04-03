@@ -69,4 +69,13 @@ public static unsafe class VKLoader
 
         return fnptr;
     }
+
+    public static IntPtr GetDeviceProcAddr(VkDevice device, string name)
+    {
+        IntPtr data = Marshal.StringToCoTaskMemAnsi(name);
+        IntPtr fnptr = Vk.GetDeviceProcAddr(device, (byte*)data);
+        Marshal.FreeCoTaskMem(data);
+
+        return fnptr;
+    }
 }

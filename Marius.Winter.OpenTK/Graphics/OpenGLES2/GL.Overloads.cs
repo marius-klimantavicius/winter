@@ -1,7 +1,8 @@
-// This file is auto generated, do not edit. Generated: 2024-11-11 18:27:30 GMT+01:00
+// This file is auto generated, do not edit. Generated: 2025-03-27 19:03:30 GMT+01:00
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using OpenTK.Core.Native;
 using OpenTK.Mathematics;
 
 namespace OpenTK.Graphics.OpenGLES2;
@@ -291,9 +292,11 @@ public static unsafe partial class GL
         }
     }
     /// <inheritdoc cref="CreateShaderProgramv(ShaderType, int, byte**)"/>
-    public static unsafe int CreateShaderProgram(ShaderType type, int count, byte** strings)
+    public static unsafe int CreateShaderProgram(ShaderType type, int count, string[] strings)
     {
-        var returnValue = CreateShaderProgramv(type, count, strings);
+        byte** strings_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(strings);
+        var returnValue = CreateShaderProgramv(type, count, strings_ptr);
+        MarshalTk.FreeStringArrayCoTaskMem((IntPtr)strings_ptr, strings.Length);
         return returnValue;
     }
     /// <inheritdoc cref="DebugMessageCallback(IntPtr, void*)"/>
@@ -3065,37 +3068,45 @@ public static unsafe partial class GL
         }
     }
     /// <inheritdoc cref="GetUniformIndices(int, int, byte**, uint*)"/>
-    public static unsafe void GetUniformIndices(int program, int uniformCount, byte** uniformNames, Span<uint> uniformIndices)
+    public static unsafe void GetUniformIndices(int program, int uniformCount, string[] uniformNames, Span<uint> uniformIndices)
     {
         fixed (uint* uniformIndices_ptr = uniformIndices)
         {
-            GetUniformIndices(program, uniformCount, uniformNames, uniformIndices_ptr);
+            byte** uniformNames_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(uniformNames);
+            GetUniformIndices(program, uniformCount, uniformNames_ptr, uniformIndices_ptr);
+            MarshalTk.FreeStringArrayCoTaskMem((IntPtr)uniformNames_ptr, uniformNames.Length);
         }
     }
     /// <inheritdoc cref="GetUniformIndices(int, int, byte**, uint*)"/>
-    public static unsafe void GetUniformIndices(int program, int uniformCount, byte** uniformNames, uint[] uniformIndices)
+    public static unsafe void GetUniformIndices(int program, int uniformCount, string[] uniformNames, uint[] uniformIndices)
     {
         fixed (uint* uniformIndices_ptr = uniformIndices)
         {
-            GetUniformIndices(program, uniformCount, uniformNames, uniformIndices_ptr);
+            byte** uniformNames_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(uniformNames);
+            GetUniformIndices(program, uniformCount, uniformNames_ptr, uniformIndices_ptr);
+            MarshalTk.FreeStringArrayCoTaskMem((IntPtr)uniformNames_ptr, uniformNames.Length);
         }
     }
     /// <inheritdoc cref="GetUniformIndices(int, int, byte**, uint*)"/>
-    public static unsafe uint GetUniformIndices(int program, int uniformCount, byte** uniformNames)
+    public static unsafe uint GetUniformIndices(int program, int uniformCount, string[] uniformNames)
     {
         uint uniformIndices;
         uint* uniformIndices_ptr = &uniformIndices;
         {
-            GetUniformIndices(program, uniformCount, uniformNames, uniformIndices_ptr);
+            byte** uniformNames_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(uniformNames);
+            GetUniformIndices(program, uniformCount, uniformNames_ptr, uniformIndices_ptr);
+            MarshalTk.FreeStringArrayCoTaskMem((IntPtr)uniformNames_ptr, uniformNames.Length);
         }
         return uniformIndices;
     }
     /// <inheritdoc cref="GetUniformIndices(int, int, byte**, uint*)"/>
-    public static unsafe void GetUniformIndices(int program, int uniformCount, byte** uniformNames, out uint uniformIndices)
+    public static unsafe void GetUniformIndices(int program, int uniformCount, string[] uniformNames, out uint uniformIndices)
     {
         fixed (uint* uniformIndices_ptr = &uniformIndices)
         {
-            GetUniformIndices(program, uniformCount, uniformNames, uniformIndices_ptr);
+            byte** uniformNames_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(uniformNames);
+            GetUniformIndices(program, uniformCount, uniformNames_ptr, uniformIndices_ptr);
+            MarshalTk.FreeStringArrayCoTaskMem((IntPtr)uniformNames_ptr, uniformNames.Length);
         }
     }
     /// <inheritdoc cref="GetUniformiv(int, int, int*)"/>
@@ -4271,27 +4282,33 @@ public static unsafe partial class GL
         }
     }
     /// <inheritdoc cref="ShaderSource(int, int, byte**, int*)"/>
-    public static unsafe void ShaderSource(int shader, int count, byte** str, ReadOnlySpan<int> length)
+    public static unsafe void ShaderSource(int shader, int count, string[] str, ReadOnlySpan<int> length)
     {
         fixed (int* length_ptr = length)
         {
-            ShaderSource(shader, count, str, length_ptr);
+            byte** str_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(str);
+            ShaderSource(shader, count, str_ptr, length_ptr);
+            MarshalTk.FreeStringArrayCoTaskMem((IntPtr)str_ptr, str.Length);
         }
     }
     /// <inheritdoc cref="ShaderSource(int, int, byte**, int*)"/>
-    public static unsafe void ShaderSource(int shader, int count, byte** str, int[] length)
+    public static unsafe void ShaderSource(int shader, int count, string[] str, int[] length)
     {
         fixed (int* length_ptr = length)
         {
-            ShaderSource(shader, count, str, length_ptr);
+            byte** str_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(str);
+            ShaderSource(shader, count, str_ptr, length_ptr);
+            MarshalTk.FreeStringArrayCoTaskMem((IntPtr)str_ptr, str.Length);
         }
     }
     /// <inheritdoc cref="ShaderSource(int, int, byte**, int*)"/>
-    public static unsafe void ShaderSource(int shader, int count, byte** str, ref readonly int length)
+    public static unsafe void ShaderSource(int shader, int count, string[] str, ref readonly int length)
     {
         fixed (int* length_ptr = &length)
         {
-            ShaderSource(shader, count, str, length_ptr);
+            byte** str_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(str);
+            ShaderSource(shader, count, str_ptr, length_ptr);
+            MarshalTk.FreeStringArrayCoTaskMem((IntPtr)str_ptr, str.Length);
         }
     }
     /// <inheritdoc cref="TexImage2D(TextureTarget, int, InternalFormat, int, int, int, PixelFormat, PixelType, void*)"/>
@@ -4521,6 +4538,13 @@ public static unsafe partial class GL
         {
             TexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels_ptr);
         }
+    }
+    /// <inheritdoc cref="TransformFeedbackVaryings(int, int, byte**, TransformFeedbackBufferMode)"/>
+    public static unsafe void TransformFeedbackVaryings(int program, int count, string[] varyings, TransformFeedbackBufferMode bufferMode)
+    {
+        byte** varyings_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(varyings);
+        TransformFeedbackVaryings(program, count, varyings_ptr, bufferMode);
+        MarshalTk.FreeStringArrayCoTaskMem((IntPtr)varyings_ptr, varyings.Length);
     }
     /// <inheritdoc cref="Uniform1fv(int, int, float*)"/>
     public static unsafe void Uniform1f(int location, int count, ref readonly float value)
@@ -5982,6 +6006,14 @@ public static unsafe partial class GL
             byte* str_ptr = (byte*)Marshal.StringToCoTaskMemUTF8(str);
             var returnValue = CreateShaderProgramEXT(type, str_ptr);
             Marshal.FreeCoTaskMem((IntPtr)str_ptr);
+            return returnValue;
+        }
+        /// <inheritdoc cref="CreateShaderProgramvEXT(ShaderType, int, byte**)"/>
+        public static unsafe int CreateShaderProgramvEXT(ShaderType type, int count, string[] strings)
+        {
+            byte** strings_ptr = (byte**)MarshalTk.StringArrayToCoTaskMemUTF8(strings);
+            var returnValue = CreateShaderProgramvEXT(type, count, strings_ptr);
+            MarshalTk.FreeStringArrayCoTaskMem((IntPtr)strings_ptr, strings.Length);
             return returnValue;
         }
         /// <inheritdoc cref="DeleteMemoryObjectsEXT(int, uint*)"/>

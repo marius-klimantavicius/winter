@@ -961,7 +961,7 @@ public class X11WindowComponent : IWindowComponent
                         int charsWritten = XLookupString(&keyPressed, &buffer, 0, &keysym, null);
 
                         Scancode scancode = X11KeyboardComponent.ToScancode(keyPressed.keycode);
-                        Key key = X11KeyboardComponent.TranslateKeySym( MemoryMarshal.CreateReadOnlySpan(ref keysym, 1));
+                        Key key = X11KeyboardComponent.TranslateKeySym(MemoryMarshal.CreateReadOnlySpan(ref keysym, 1));
 
                         KeyModifier modifiers = X11KeyboardComponent.ModifiersFromState(keyPressed.state);
 

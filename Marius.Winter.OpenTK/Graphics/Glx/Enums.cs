@@ -1,4 +1,4 @@
-// This file is auto generated, do not edit. Generated: 2024-11-11 18:27:30 GMT+01:00
+// This file is auto generated, do not edit. Generated: 2025-03-27 19:03:30 GMT+01:00
 
 namespace OpenTK.Graphics.Glx;
 #pragma warning disable CA1069 // Enums values should not be duplicated
