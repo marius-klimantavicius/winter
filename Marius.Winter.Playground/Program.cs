@@ -21,13 +21,13 @@ internal class Program
         };
 
         var screen = new Screen(new Vector2i(800, 600), new OpenGLSurfaceFactory());
-        
+
         var vpanel = new VScrollPanel(screen)
         {
             Position = new Vector2i(100, 100),
             FixedSize = new Vector2i(100, 200),
         };
-        
+
         var label = new Label(vpanel, "", Theme.Default.FontSansRegular, 14)
         {
             //FixedWidth = 100,
@@ -58,13 +58,13 @@ internal class Program
                       }
                       """,
         };
-        
+
         var checkbox = new Checkbox(screen, "CB")
         {
             Position = new Vector2i(300, 200),
             Size = new Vector2i(200, 40),
         };
-        
+
         var button = new PopupButton(screen, "Ze button")
         {
             Position = new Vector2i(250, 100),
@@ -75,9 +75,9 @@ internal class Program
                           params->renderViewport(params->userPtr, _size[0], _size[1], m_pixel_ratio);
                       }
                       """,
-        
+
         };
-        
+
         var pg = new ProgressBar(screen)
         {
             Position = new Vector2i(250, 200),
@@ -104,7 +104,7 @@ internal class Program
                       }
                       """,
         };
-        
+
         var tabs = new TabWidget(screen)
         {
             TabsDraggable = true,
@@ -118,7 +118,7 @@ internal class Program
             //FixedWidth = 200,
             IsEditable = true,
         });
-        
+
         var gridLayout = new AdvancedGridLayout([50, 100, 30], [30, 50, 50, 50, 50]);
         var window = new Window(screen)
         {
@@ -127,7 +127,7 @@ internal class Program
             //FixedWidth = 200,
             Layout = gridLayout,
         };
-        
+
         var windowLabels = new List<Widget>
         {
             new Label(window, "AAAA", Theme.Default.FontSansRegular, 14),
@@ -158,23 +158,23 @@ internal class Program
         gridLayout.SetAnchor(windowLabels[5], 1, 3, rowSpan: 2, vertical: Alignment.Maximum);
         gridLayout.SetAnchor(windowLabels[6], 0, 3);
         gridLayout.SetAnchor(windowLabels[7], 1, 3, rowSpan: 2, vertical: Alignment.Middle);
-        
+
         var tb = new ToolButton(window.ButtonPanel, "", new FontIcon(Icons.FA_CLOUD, Theme.Default.FontIcons))
         {
             //Position = new Vector2i(300, 10),
         };
-        
+
         tb.Toggled += (_, b) =>
         {
             // if (!b)
             //     gridLayout.Orientation = Orientation.Horizontal;
             // else
             //     gridLayout.Orientation = Orientation.Vertical;
-        
+
             screen.PerformLayout(screen.Context);
             window.Title = $"Width: {window.Size.X}, Height: {window.Size.Y}";
         };
-        
+
         button.Clicked += s =>
         {
             if (s.Icon == null)
@@ -187,19 +187,19 @@ internal class Program
             {
                 s.Icon = null;
             }
-        
+
             //window.Center();
-        
+
             if (pg.Value >= 1)
                 pg.Value = 0;
-        
+
             pg.Value += 0.08f;
-        
+
             new MessageDialog(screen, MessageDialogType.Question);
         };
-        
+
         screen.IsVisible = true;
-        
+
         screen.PerformLayout(screen.Context);
         checkbox.Size = checkbox.GetPreferredSize(screen.Context);
         label.Size = label.GetPreferredSize(screen.Context);

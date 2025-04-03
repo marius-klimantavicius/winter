@@ -1,6 +1,5 @@
 ﻿using OpenTK.Core.Utility;
 using System.ComponentModel;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 

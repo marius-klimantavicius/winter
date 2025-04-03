@@ -4,16 +4,15 @@ namespace Marius.Winter.Forms.Vulkan;
 
 internal struct VulkanDevice
 {
-    public VkPhysicalDevice gpu;
-    public VkPhysicalDeviceProperties gpuProperties;
-    public VkPhysicalDeviceMemoryProperties memoryProperties;
+    public VkPhysicalDevice PhysicalDevice;
+    public VkPhysicalDeviceProperties PhysicalDeviceProperties;
+    public VkPhysicalDeviceMemoryProperties PhysicalDeviceMemoryProperties;
 
-    public VkQueueFamilyProperties[] queueFamilyProperties;
+    public VkQueueFamilyProperties[] QueueFamilyProperties;
 
-    public uint graphicsQueueFamilyIndex;
-    public uint presentIndex;
+    public uint GraphicsQueueFamilyIndex;
+    public uint PresentIndex;
 
-    public VkDevice device;
-
-    public VkCommandPool commandPool;
+    public VkDevice Device;
+    public VkCommandPool CommandPool;
 }

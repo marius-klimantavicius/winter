@@ -4,6 +4,6 @@ namespace Marius.Winter.Forms.Vulkan;
 
 internal struct VulkanSwapchain
 {
-    public VkImage image;
-    public VkImageView view;
+    public VkImage Image;
+    public VkImageView ImageView;
 }

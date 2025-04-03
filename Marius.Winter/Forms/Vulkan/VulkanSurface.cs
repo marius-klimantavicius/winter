@@ -37,13 +37,13 @@ internal unsafe class VulkanSurface : Surface
         _presentQueue = presentQueue;
 
         _frameBuffers = CreateFrameBuffers(device, surface, executionQueue, 800, 600, VkSwapchainKHR.Zero);
-        _commandBuffer = CreateCmdBuffer(device.device, device.commandPool, _frameBuffers.swapchain_image_count);
-        _secondaryCommandBuffer = CreateCmdBuffer(device.device, device.commandPool, _frameBuffers.swapchain_image_count);
+        _commandBuffer = CreateCommandBuffers(device.Device, device.CommandPool, _frameBuffers.SwapchainCount);
+        _secondaryCommandBuffer = CreateCommandBuffers(device.Device, device.CommandPool, _frameBuffers.SwapchainCount);
 
         var createInfo = new VkNvgCreateInfo
         {
-            Device = device.device,
-            PhysicalDevice = device.gpu,
+            Device = device.Device,
+            PhysicalDevice = device.PhysicalDevice,
             CommandBuffer = _commandBuffer,
             SecondaryCommandBuffer = _secondaryCommandBuffer,
             Extensions = ext,
@@ -64,7 +64,7 @@ internal unsafe class VulkanSurface : Surface
                 _isResize = false;
                 _size = size;
 
-                Vk.DeviceWaitIdle(_device.device);
+                Vk.DeviceWaitIdle(_device.Device);
                 DestroyFrameBuffers(_device, ref _frameBuffers, _executionQueue);
                 _frameBuffers = CreateFrameBuffers(_device, _surface, _executionQueue, size.X, size.Y, VkSwapchainKHR.Zero);
                 _renderer.Viewport(size.X, size.Y);
@@ -77,20 +77,20 @@ internal unsafe class VulkanSurface : Surface
 
     public override void SubmitFrame()
     {
-        SubmitFrame(_device.device, _executionQueue, _presentQueue, _commandBuffer[_frameBuffers.current_frame], ref _frameBuffers, ref _isResize);
+        SubmitFrame(_device.Device, _executionQueue, _presentQueue, _commandBuffer[_frameBuffers.CurrentFrame], ref _frameBuffers, ref _isResize);
     }
 
     private void PrepareFrame(Color4<Rgba> backgroundColor, ref bool isResize)
     {
-        var device = _device.device;
-        var cmd_buffer = _commandBuffer[_frameBuffers.current_frame];
+        var device = _device.Device;
+        var commandBuffer = _commandBuffer[_frameBuffers.CurrentFrame];
         ref var fb = ref _frameBuffers;
         
         VkResult res;
 
         // Get the index of the next available swapchain image:
-        fixed (uint* ptr = &fb.current_frame_buffer)
-            res = Vk.AcquireNextImageKHR(device, fb.swap_chain, ulong.MaxValue, fb.present_complete_semaphore[fb.current_frame], VkFence.Zero, ptr);
+        fixed (uint* ptr = &fb.CurrentFrameBuffer)
+            res = Vk.AcquireNextImageKHR(device, fb.Swapchain, ulong.MaxValue, fb.PresentCompleteSemaphore[fb.CurrentFrame], VkFence.Zero, ptr);
 
         if (res == VkResult.ErrorOutOfDateKhr)
         {
@@ -103,51 +103,52 @@ internal unsafe class VulkanSurface : Surface
 
         _renderer.BeforeRender();
         
-        var cmd_buf_info = new VkCommandBufferBeginInfo { sType = VkStructureType.StructureTypeCommandBufferBeginInfo };
-        Vk.BeginCommandBuffer(cmd_buffer, &cmd_buf_info);
+        var beginInfo = new VkCommandBufferBeginInfo { sType = VkStructureType.StructureTypeCommandBufferBeginInfo };
+        Vk.BeginCommandBuffer(commandBuffer, &beginInfo);
 
-        var clear_values = stackalloc VkClearValue[2];
-        clear_values[0].color.float32[0] = backgroundColor.X;
-        clear_values[0].color.float32[1] = backgroundColor.Y;
-        clear_values[0].color.float32[2] = backgroundColor.Z;
-        clear_values[0].color.float32[3] = backgroundColor.W;
-        clear_values[1].depthStencil.depth = 1.0f;
-        clear_values[1].depthStencil.stencil = 0;
+        var clearValues
+            = stackalloc VkClearValue[2];
+        clearValues[0].color.float32[0] = backgroundColor.X;
+        clearValues[0].color.float32[1] = backgroundColor.Y;
+        clearValues[0].color.float32[2] = backgroundColor.Z;
+        clearValues[0].color.float32[3] = backgroundColor.W;
+        clearValues[1].depthStencil.depth = 1.0f;
+        clearValues[1].depthStencil.stencil = 0;
 
-        var rp_begin = new VkRenderPassBeginInfo
+        var renderPassBeginInfo = new VkRenderPassBeginInfo
         {
             sType = VkStructureType.StructureTypeRenderPassBeginInfo,
             pNext = null,
-            renderPass = fb.render_pass,
-            framebuffer = fb.framebuffers[fb.current_frame_buffer],
+            renderPass = fb.RenderPass,
+            framebuffer = fb.Framebuffers[fb.CurrentFrameBuffer],
         };
-        rp_begin.renderArea.offset.x = 0;
-        rp_begin.renderArea.offset.y = 0;
-        rp_begin.renderArea.extent.width = fb.buffer_size.width;
-        rp_begin.renderArea.extent.height = fb.buffer_size.height;
-        rp_begin.clearValueCount = 2;
-        rp_begin.pClearValues = clear_values;
+        renderPassBeginInfo.renderArea.offset.x = 0;
+        renderPassBeginInfo.renderArea.offset.y = 0;
+        renderPassBeginInfo.renderArea.extent.width = fb.BufferSize.width;
+        renderPassBeginInfo.renderArea.extent.height = fb.BufferSize.height;
+        renderPassBeginInfo.clearValueCount = 2;
+        renderPassBeginInfo.pClearValues = clearValues;
 
-        Vk.CmdBeginRenderPass(cmd_buffer, &rp_begin, VkSubpassContents.SubpassContentsInline);
+        Vk.CmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VkSubpassContents.SubpassContentsInline);
 
         VkViewport viewport;
-        viewport.width = fb.buffer_size.width;
-        viewport.height = fb.buffer_size.height;
+        viewport.width = fb.BufferSize.width;
+        viewport.height = fb.BufferSize.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        viewport.x = rp_begin.renderArea.offset.x;
-        viewport.y = rp_begin.renderArea.offset.y;
-        Vk.CmdSetViewport(cmd_buffer, 0, 1, &viewport);
+        viewport.x = renderPassBeginInfo.renderArea.offset.x;
+        viewport.y = renderPassBeginInfo.renderArea.offset.y;
+        Vk.CmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-        var scissor = rp_begin.renderArea;
-        Vk.CmdSetScissor(cmd_buffer, 0, 1, &scissor);
+        var scissor = renderPassBeginInfo.renderArea;
+        Vk.CmdSetScissor(commandBuffer, 0, 1, &scissor);
     }
 
-    private static void SubmitFrame(VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue, VkCommandBuffer cmd_buffer, ref VulkanFrameBuffers fb, ref bool isResize)
+    private static void SubmitFrame(VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue, VkCommandBuffer commandBuffer, ref VulkanFrameBuffers fb, ref bool isResize)
     {
-        Vk.CmdEndRenderPass(cmd_buffer);
+        Vk.CmdEndRenderPass(commandBuffer);
 
-        var image_barrier = new VkImageMemoryBarrier
+        var imageBarrier = new VkImageMemoryBarrier
         {
             sType = VkStructureType.StructureTypeImageMemoryBarrier,
             srcAccessMask = VkAccessFlagBits.AccessColorAttachmentWriteBit,
@@ -156,7 +157,7 @@ internal unsafe class VulkanSurface : Surface
             newLayout = VkImageLayout.ImageLayoutPresentSrcKhr,
             srcQueueFamilyIndex = Vk.QueueFamilyIgnored,
             dstQueueFamilyIndex = Vk.QueueFamilyIgnored,
-            image = fb.swap_chain_buffers[fb.current_frame_buffer].image,
+            image = fb.SwapchainBuffers[fb.CurrentFrameBuffer].Image,
             subresourceRange = new VkImageSubresourceRange
             {
                 aspectMask = VkImageAspectFlagBits.ImageAspectColorBit,
@@ -166,46 +167,46 @@ internal unsafe class VulkanSurface : Surface
                 layerCount = 1,
             },
         };
-        Vk.CmdPipelineBarrier(cmd_buffer, VkPipelineStageFlagBits.PipelineStageColorAttachmentOutputBit, VkPipelineStageFlagBits.PipelineStageBottomOfPipeBit, 0, 0, null, 0, null, 1, &image_barrier);
+        Vk.CmdPipelineBarrier(commandBuffer, VkPipelineStageFlagBits.PipelineStageColorAttachmentOutputBit, VkPipelineStageFlagBits.PipelineStageBottomOfPipeBit, 0, 0, null, 0, null, 1, &imageBarrier);
 
-        Vk.EndCommandBuffer(cmd_buffer);
+        Vk.EndCommandBuffer(commandBuffer);
 
-        var pipe_stage_flags = VkPipelineStageFlagBits.PipelineStageColorAttachmentOutputBit;
+        var pipelineStageFlags = VkPipelineStageFlagBits.PipelineStageColorAttachmentOutputBit;
 
-        fixed (VkSemaphore* present_complete_semaphore = &fb.present_complete_semaphore[fb.current_frame])
-        fixed (VkSemaphore* render_complete_semaphore = &fb.render_complete_semaphore[fb.current_frame])
+        fixed (VkSemaphore* presentCompleteSemaphore = &fb.PresentCompleteSemaphore[fb.CurrentFrame])
+        fixed (VkSemaphore* renderCompleteSemaphore = &fb.RenderCompleteSemaphore[fb.CurrentFrame])
         {
-            var submit_info = new VkSubmitInfo
+            var submitInfo = new VkSubmitInfo
             {
                 sType = VkStructureType.StructureTypeSubmitInfo,
                 pNext = null,
                 waitSemaphoreCount = 1,
-                pWaitSemaphores = present_complete_semaphore,
-                pWaitDstStageMask = &pipe_stage_flags,
+                pWaitSemaphores = presentCompleteSemaphore,
+                pWaitDstStageMask = &pipelineStageFlags,
                 commandBufferCount = 1,
-                pCommandBuffers = &cmd_buffer,
+                pCommandBuffers = &commandBuffer,
                 signalSemaphoreCount = 1,
-                pSignalSemaphores = render_complete_semaphore,
+                pSignalSemaphores = renderCompleteSemaphore,
             };
 
-            Vk.QueueSubmit(presentQueue, 1, &submit_info, fb.flight_fence[fb.current_frame]);
+            Vk.QueueSubmit(presentQueue, 1, &submitInfo, fb.FlightFence[fb.CurrentFrame]);
         }
 
         /* Now present the image in the window */
 
-        fixed (VkSwapchainKHR* presentPSwapchains = &fb.swap_chain)
-        fixed (uint* presentPImageIndices = &fb.current_frame_buffer)
-        fixed (VkSemaphore* presentPWaitSemaphores = &fb.render_complete_semaphore[fb.current_frame])
+        fixed (VkSwapchainKHR* presentSwapchains = &fb.Swapchain)
+        fixed (uint* presentImageIndices = &fb.CurrentFrameBuffer)
+        fixed (VkSemaphore* presentWaitSemaphores = &fb.RenderCompleteSemaphore[fb.CurrentFrame])
         {
             var present = new VkPresentInfoKHR
             {
                 sType = VkStructureType.StructureTypePresentInfoKhr,
                 pNext = null,
                 swapchainCount = 1,
-                pSwapchains = presentPSwapchains,
-                pImageIndices = presentPImageIndices,
+                pSwapchains = presentSwapchains,
+                pImageIndices = presentImageIndices,
                 waitSemaphoreCount = 1,
-                pWaitSemaphores = presentPWaitSemaphores,
+                pWaitSemaphores = presentWaitSemaphores,
             };
 
             var res = Vk.QueuePresentKHR(presentQueue, &present);
@@ -217,12 +218,12 @@ internal unsafe class VulkanSurface : Surface
                 return;
             }
 
-            fb.current_frame = (fb.current_frame + 1) % fb.swapchain_image_count;
-            fb.num_swaps++;
+            fb.CurrentFrame = (fb.CurrentFrame + 1) % fb.SwapchainCount;
+            fb.SwapCount++;
 
-            if (fb.num_swaps >= fb.swapchain_image_count)
+            if (fb.SwapCount >= fb.SwapchainCount)
             {
-                fixed (VkFence* pFences = &fb.flight_fence[fb.current_frame])
+                fixed (VkFence* pFences = &fb.FlightFence[fb.CurrentFrame])
                 {
                     Vk.WaitForFences(device, 1, pFences, 1, ulong.MaxValue);
                     Vk.ResetFences(device, 1, pFences);
@@ -231,25 +232,25 @@ internal unsafe class VulkanSurface : Surface
         }
     }
 
-    private static VkCommandBuffer[] CreateCmdBuffer(VkDevice device, VkCommandPool cmd_pool, uint command_buffer_count)
+    private static VkCommandBuffer[] CreateCommandBuffers(VkDevice device, VkCommandPool commandPool, uint commandBufferCount)
     {
         VkResult res;
         var cmd = new VkCommandBufferAllocateInfo
         {
             sType = VkStructureType.StructureTypeCommandBufferAllocateInfo,
-            commandPool = cmd_pool,
+            commandPool = commandPool,
             level = VkCommandBufferLevel.CommandBufferLevelPrimary,
-            commandBufferCount = command_buffer_count,
+            commandBufferCount = commandBufferCount,
         };
 
-        var cmd_buffer = new VkCommandBuffer[command_buffer_count];
-        fixed (VkCommandBuffer* ptr = cmd_buffer)
+        var commandBuffers = new VkCommandBuffer[commandBufferCount];
+        fixed (VkCommandBuffer* ptr = commandBuffers)
             res = Vk.AllocateCommandBuffers(device, &cmd, ptr);
         Debug.Assert(res == VkResult.Success);
-        return cmd_buffer;
+        return commandBuffers;
     }
 
-    private static bool GetMemoryTypeFromProperties(VkPhysicalDeviceMemoryProperties memoryProps, uint typeBits, VkMemoryPropertyFlagBits requirements_mask, ref uint typeIndex)
+    private static bool GetMemoryTypeFromProperties(VkPhysicalDeviceMemoryProperties memoryProps, uint typeBits, VkMemoryPropertyFlagBits requirementsMask, ref uint typeIndex)
     {
         // Search memtypes to find first index with those properties
         for (var i = 0; i < memoryProps.memoryTypeCount; i++)
@@ -257,7 +258,7 @@ internal unsafe class VulkanSurface : Surface
             if ((typeBits & 1) == 1)
             {
                 // Type is available, does it match user properties?
-                if ((memoryProps.memoryTypes[i].propertyFlags & requirements_mask) == requirements_mask)
+                if ((memoryProps.memoryTypes[i].propertyFlags & requirementsMask) == requirementsMask)
                 {
                     typeIndex = (uint)i;
                     return true;
@@ -274,115 +275,112 @@ internal unsafe class VulkanSurface : Surface
     private static VulkanDepthBuffer CreateDepthBuffer(in VulkanDevice device, uint width, uint height)
     {
         VulkanDepthBuffer depth;
-        depth.format = VkFormat.FormatD24UnormS8Uint;
+        depth.Format = VkFormat.FormatD24UnormS8Uint;
 
-        const int dformats = 3;
-        var depth_formats = stackalloc VkFormat[dformats] { VkFormat.FormatD32SfloatS8Uint, VkFormat.FormatD24UnormS8Uint, VkFormat.FormatD16UnormS8Uint };
-        var image_tilling = VkImageTiling.ImageTilingOptimal;
-        for (var i = 0; i < dformats; i++)
+        const int depthFormatCount = 3;
+        var depthFormats = stackalloc VkFormat[depthFormatCount] { VkFormat.FormatD32SfloatS8Uint, VkFormat.FormatD24UnormS8Uint, VkFormat.FormatD16UnormS8Uint };
+        var imageTilling = VkImageTiling.ImageTilingOptimal;
+        for (var i = 0; i < depthFormatCount; i++)
         {
-            VkFormatProperties fprops;
-            Vk.GetPhysicalDeviceFormatProperties(device.gpu, depth_formats[i], &fprops);
+            VkFormatProperties formatProperties;
+            Vk.GetPhysicalDeviceFormatProperties(device.PhysicalDevice, depthFormats[i], &formatProperties);
 
-            if ((fprops.linearTilingFeatures & VkFormatFeatureFlagBits.FormatFeatureDepthStencilAttachmentBit) != 0)
+            if ((formatProperties.linearTilingFeatures & VkFormatFeatureFlagBits.FormatFeatureDepthStencilAttachmentBit) != 0)
             {
-                depth.format = depth_formats[i];
-                image_tilling = VkImageTiling.ImageTilingLinear;
+                depth.Format = depthFormats[i];
+                imageTilling = VkImageTiling.ImageTilingLinear;
                 break;
             }
 
-            if ((fprops.optimalTilingFeatures & VkFormatFeatureFlagBits.FormatFeatureDepthStencilAttachmentBit) != 0)
+            if ((formatProperties.optimalTilingFeatures & VkFormatFeatureFlagBits.FormatFeatureDepthStencilAttachmentBit) != 0)
             {
-                depth.format = depth_formats[i];
-                image_tilling = VkImageTiling.ImageTilingOptimal;
+                depth.Format = depthFormats[i];
+                imageTilling = VkImageTiling.ImageTilingOptimal;
                 break;
             }
 
-            if (i == dformats - 1)
-            {
+            if (i == depthFormatCount - 1)
                 throw new Exception("Failed to find supported depth format!");
-            }
         }
 
-        var depth_format = depth.format;
+        var depthFormat = depth.Format;
 
-        var image_info = new VkImageCreateInfo
+        var imageCreateInfo = new VkImageCreateInfo
         {
             sType = VkStructureType.StructureTypeImageCreateInfo,
             imageType = VkImageType.ImageType2d,
-            format = depth_format,
-            tiling = image_tilling,
+            format = depthFormat,
+            tiling = imageTilling,
         };
-        image_info.extent.width = width;
-        image_info.extent.height = height;
-        image_info.extent.depth = 1;
-        image_info.mipLevels = 1;
-        image_info.arrayLayers = 1;
-        image_info.samples = VkSampleCountFlagBits.SampleCount1Bit;
-        image_info.initialLayout = VkImageLayout.ImageLayoutUndefined;
-        image_info.queueFamilyIndexCount = 0;
-        image_info.pQueueFamilyIndices = null;
-        image_info.sharingMode = VkSharingMode.SharingModeExclusive;
-        image_info.usage = VkImageUsageFlagBits.ImageUsageDepthStencilAttachmentBit;
+        imageCreateInfo.extent.width = width;
+        imageCreateInfo.extent.height = height;
+        imageCreateInfo.extent.depth = 1;
+        imageCreateInfo.mipLevels = 1;
+        imageCreateInfo.arrayLayers = 1;
+        imageCreateInfo.samples = VkSampleCountFlagBits.SampleCount1Bit;
+        imageCreateInfo.initialLayout = VkImageLayout.ImageLayoutUndefined;
+        imageCreateInfo.queueFamilyIndexCount = 0;
+        imageCreateInfo.pQueueFamilyIndices = null;
+        imageCreateInfo.sharingMode = VkSharingMode.SharingModeExclusive;
+        imageCreateInfo.usage = VkImageUsageFlagBits.ImageUsageDepthStencilAttachmentBit;
 
-        var mem_alloc = new VkMemoryAllocateInfo { sType = VkStructureType.StructureTypeMemoryAllocateInfo };
+        var memoryAllocateInfo = new VkMemoryAllocateInfo { sType = VkStructureType.StructureTypeMemoryAllocateInfo };
 
-        var view_info = new VkImageViewCreateInfo
+        var viewInfo = new VkImageViewCreateInfo
         {
             sType = VkStructureType.StructureTypeImageViewCreateInfo,
-            format = depth_format,
+            format = depthFormat,
         };
-        view_info.components.r = VkComponentSwizzle.ComponentSwizzleR;
-        view_info.components.g = VkComponentSwizzle.ComponentSwizzleG;
-        view_info.components.b = VkComponentSwizzle.ComponentSwizzleB;
-        view_info.components.a = VkComponentSwizzle.ComponentSwizzleA;
-        view_info.subresourceRange.aspectMask = VkImageAspectFlagBits.ImageAspectDepthBit;
-        view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = 1;
-        view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
-        view_info.viewType = VkImageViewType.ImageViewType2d;
+        viewInfo.components.r = VkComponentSwizzle.ComponentSwizzleR;
+        viewInfo.components.g = VkComponentSwizzle.ComponentSwizzleG;
+        viewInfo.components.b = VkComponentSwizzle.ComponentSwizzleB;
+        viewInfo.components.a = VkComponentSwizzle.ComponentSwizzleA;
+        viewInfo.subresourceRange.aspectMask = VkImageAspectFlagBits.ImageAspectDepthBit;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.layerCount = 1;
+        viewInfo.viewType = VkImageViewType.ImageViewType2d;
 
-        if (depth_format == VkFormat.FormatD16UnormS8Uint || depth_format == VkFormat.FormatD24UnormS8Uint ||
-            depth_format == VkFormat.FormatD32SfloatS8Uint)
+        if (depthFormat == VkFormat.FormatD16UnormS8Uint || depthFormat == VkFormat.FormatD24UnormS8Uint ||
+            depthFormat == VkFormat.FormatD32SfloatS8Uint)
         {
-            view_info.subresourceRange.aspectMask |= VkImageAspectFlagBits.ImageAspectStencilBit;
+            viewInfo.subresourceRange.aspectMask |= VkImageAspectFlagBits.ImageAspectStencilBit;
         }
 
-        VkMemoryRequirements mem_reqs;
-
         /* Create image */
-        var res = Vk.CreateImage(device.device, &image_info, null, &depth.image);
+        var res = Vk.CreateImage(device.Device, &imageCreateInfo, null, &depth.Image);
         Debug.Assert(res == VkResult.Success);
 
-        Vk.GetImageMemoryRequirements(device.device, depth.image, &mem_reqs);
+        VkMemoryRequirements memoryRequirements;
+        Vk.GetImageMemoryRequirements(device.Device, depth.Image, &memoryRequirements);
 
-        mem_alloc.allocationSize = mem_reqs.size;
+        memoryAllocateInfo.allocationSize = memoryRequirements.size;
         /* Use the memory properties to determine the type of memory required */
 
-        var pass = GetMemoryTypeFromProperties(device.memoryProperties, mem_reqs.memoryTypeBits, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, ref mem_alloc.memoryTypeIndex);
+        var pass = GetMemoryTypeFromProperties(device.PhysicalDeviceMemoryProperties, memoryRequirements.memoryTypeBits, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, ref memoryAllocateInfo.memoryTypeIndex);
         Debug.Assert(pass);
 
         /* Allocate memory */
-        res = Vk.AllocateMemory(device.device, &mem_alloc, null, &depth.mem);
+        res = Vk.AllocateMemory(device.Device, &memoryAllocateInfo, null, &depth.DeviceMemory);
         Debug.Assert(res == VkResult.Success);
 
         /* Bind memory */
-        res = Vk.BindImageMemory(device.device, depth.image, depth.mem, 0);
+        res = Vk.BindImageMemory(device.Device, depth.Image, depth.DeviceMemory, 0);
         Debug.Assert(res == VkResult.Success);
 
         /* Create image view */
-        view_info.image = depth.image;
-        res = Vk.CreateImageView(device.device, &view_info, null, &depth.view);
+        viewInfo.image = depth.Image;
+        res = Vk.CreateImageView(device.Device, &viewInfo, null, &depth.ImageView);
         Debug.Assert(res == VkResult.Success);
 
         return depth;
     }
 
-    private static VkRenderPass CreateRenderPass(VkDevice device, VkFormat color_format, VkFormat depth_format)
+    private static VkRenderPass CreateRenderPass(VkDevice device, VkFormat colorFormat, VkFormat depthFormat)
     {
         var attachments = stackalloc VkAttachmentDescription[2];
-        attachments[0].format = color_format;
+        attachments[0].format = colorFormat;
         attachments[0].samples = VkSampleCountFlagBits.SampleCount1Bit;
         attachments[0].loadOp = VkAttachmentLoadOp.AttachmentLoadOpClear;
         attachments[0].storeOp = VkAttachmentStoreOp.AttachmentStoreOpStore;
@@ -391,7 +389,7 @@ internal unsafe class VulkanSurface : Surface
         attachments[0].initialLayout = VkImageLayout.ImageLayoutUndefined;
         attachments[0].finalLayout = VkImageLayout.ImageLayoutColorAttachmentOptimal;
 
-        attachments[1].format = depth_format;
+        attachments[1].format = depthFormat;
         attachments[1].samples = VkSampleCountFlagBits.SampleCount1Bit;
         attachments[1].loadOp = VkAttachmentLoadOp.AttachmentLoadOpClear;
         attachments[1].storeOp = VkAttachmentStoreOp.AttachmentStoreOpDontCare;
@@ -400,58 +398,61 @@ internal unsafe class VulkanSurface : Surface
         attachments[1].initialLayout = VkImageLayout.ImageLayoutUndefined;
         attachments[1].finalLayout = VkImageLayout.ImageLayoutDepthStencilAttachmentOptimal;
 
-        var color_reference = new VkAttachmentReference
+        var colorReference = new VkAttachmentReference
         {
             attachment = 0,
             layout = VkImageLayout.ImageLayoutColorAttachmentOptimal,
         };
 
-        var depth_reference = new VkAttachmentReference
+        var depthReference = new VkAttachmentReference
         {
             attachment = 1,
             layout = VkImageLayout.ImageLayoutDepthStencilAttachmentOptimal,
         };
 
-        var subpass = new VkSubpassDescription
+        var subpassDescription = new VkSubpassDescription
         {
             pipelineBindPoint = VkPipelineBindPoint.PipelineBindPointGraphics,
             flags = 0,
             inputAttachmentCount = 0,
             pInputAttachments = null,
             colorAttachmentCount = 1,
-            pColorAttachments = &color_reference,
+            pColorAttachments = &colorReference,
             pResolveAttachments = null,
-            pDepthStencilAttachment = &depth_reference,
+            pDepthStencilAttachment = &depthReference,
             preserveAttachmentCount = 0,
             pPreserveAttachments = null,
         };
 
-        var rp_info = new VkRenderPassCreateInfo
+        var passCreateInfo = new VkRenderPassCreateInfo
         {
             sType = VkStructureType.StructureTypeRenderPassCreateInfo,
             attachmentCount = 2,
             pAttachments = attachments,
             subpassCount = 1,
-            pSubpasses = &subpass,
+            pSubpasses = &subpassDescription,
         };
-        VkRenderPass render_pass;
-        var res = Vk.CreateRenderPass(device, &rp_info, null, &render_pass);
+
+        VkRenderPass renderPass;
+        var res = Vk.CreateRenderPass(device, &passCreateInfo, null, &renderPass);
         Debug.Assert(res == VkResult.Success);
-        return render_pass;
+
+        return renderPass;
     }
 
-    private static VulkanSwapchain CreateSwapchainBuffers(in VulkanDevice device, VkFormat format, VkCommandBuffer cmdbuffer, VkImage image)
+    private static VulkanSwapchain CreateSwapchainBuffers(in VulkanDevice device, VkFormat format, VkCommandBuffer commandBuffer, VkImage image)
     {
         VulkanSwapchain buffer;
-        var color_attachment_view = new VkImageViewCreateInfo
+        var colorAttachmentView = new VkImageViewCreateInfo
         {
             sType = VkStructureType.StructureTypeImageViewCreateInfo,
             format = format,
         };
-        color_attachment_view.components.r = VkComponentSwizzle.ComponentSwizzleR;
-        color_attachment_view.components.g = VkComponentSwizzle.ComponentSwizzleG;
-        color_attachment_view.components.b = VkComponentSwizzle.ComponentSwizzleB;
-        color_attachment_view.components.a = VkComponentSwizzle.ComponentSwizzleA;
+        colorAttachmentView.components.r = VkComponentSwizzle.ComponentSwizzleR;
+        colorAttachmentView.components.g = VkComponentSwizzle.ComponentSwizzleG;
+        colorAttachmentView.components.b = VkComponentSwizzle.ComponentSwizzleB;
+        colorAttachmentView.components.a = VkComponentSwizzle.ComponentSwizzleA;
+
         var subresourceRange = new VkImageSubresourceRange
         {
             aspectMask = VkImageAspectFlagBits.ImageAspectColorBit,
@@ -461,27 +462,28 @@ internal unsafe class VulkanSurface : Surface
             layerCount = 1,
         };
 
-        color_attachment_view.subresourceRange = subresourceRange;
-        color_attachment_view.viewType = VkImageViewType.ImageViewType2d;
+        colorAttachmentView.subresourceRange = subresourceRange;
+        colorAttachmentView.viewType = VkImageViewType.ImageViewType2d;
 
-        buffer.image = image;
+        buffer.Image = image;
 
-        SetupImageLayout(cmdbuffer, image, VkImageAspectFlagBits.ImageAspectColorBit, VkImageLayout.ImageLayoutUndefined, VkImageLayout.ImageLayoutPresentSrcKhr);
+        SetupImageLayout(commandBuffer, image, VkImageAspectFlagBits.ImageAspectColorBit, VkImageLayout.ImageLayoutUndefined, VkImageLayout.ImageLayoutPresentSrcKhr);
 
-        color_attachment_view.image = buffer.image;
+        colorAttachmentView.image = buffer.Image;
 
-        var res = Vk.CreateImageView(device.device, &color_attachment_view, null, &buffer.view);
+        var res = Vk.CreateImageView(device.Device, &colorAttachmentView, null, &buffer.ImageView);
         Debug.Assert(res == VkResult.Success);
+
         return buffer;
     }
 
-    private static void SetupImageLayout(VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlagBits aspectMask, VkImageLayout old_image_layout, VkImageLayout new_image_layout)
+    private static void SetupImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageAspectFlagBits aspectMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout)
     {
-        var image_memory_barrier = new VkImageMemoryBarrier
+        var imageMemoryBarrier = new VkImageMemoryBarrier
         {
             sType = VkStructureType.StructureTypeImageMemoryBarrier,
-            oldLayout = old_image_layout,
-            newLayout = new_image_layout,
+            oldLayout = oldImageLayout,
+            newLayout = newImageLayout,
             image = image,
         };
 
@@ -490,140 +492,105 @@ internal unsafe class VulkanSurface : Surface
             aspectMask = aspectMask,
             baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1,
         };
-        image_memory_barrier.subresourceRange = subresourceRange;
+        imageMemoryBarrier.subresourceRange = subresourceRange;
 
-        if (new_image_layout == VkImageLayout.ImageLayoutTransferDstOptimal)
+        imageMemoryBarrier.dstAccessMask = newImageLayout switch
         {
-            /* Make sure anything that was copying from this image has completed */
-            image_memory_barrier.dstAccessMask = VkAccessFlagBits.AccessTransferReadBit;
-        }
+            VkImageLayout.ImageLayoutTransferDstOptimal => VkAccessFlagBits.AccessTransferReadBit,
+            VkImageLayout.ImageLayoutColorAttachmentOptimal => VkAccessFlagBits.AccessColorAttachmentWriteBit,
+            VkImageLayout.ImageLayoutDepthStencilAttachmentOptimal => VkAccessFlagBits.AccessDepthStencilAttachmentWriteBit,
+            VkImageLayout.ImageLayoutShaderReadOnlyOptimal => VkAccessFlagBits.AccessShaderReadBit | VkAccessFlagBits.AccessInputAttachmentReadBit,
+            _ => imageMemoryBarrier.dstAccessMask
+        };
 
-        if (new_image_layout == VkImageLayout.ImageLayoutColorAttachmentOptimal)
-        {
-            image_memory_barrier.dstAccessMask = VkAccessFlagBits.AccessColorAttachmentWriteBit;
-        }
+        var srcStageMask = VkPipelineStageFlagBits.PipelineStageTopOfPipeBit;
+        var destStageMask = VkPipelineStageFlagBits.PipelineStageTopOfPipeBit;
 
-        if (new_image_layout == VkImageLayout.ImageLayoutDepthStencilAttachmentOptimal)
-        {
-            image_memory_barrier.dstAccessMask = VkAccessFlagBits.AccessDepthStencilAttachmentWriteBit;
-        }
-
-        if (new_image_layout == VkImageLayout.ImageLayoutShaderReadOnlyOptimal)
-        {
-            /* Make sure any Copy or CPU writes to image are flushed */
-            image_memory_barrier.dstAccessMask = VkAccessFlagBits.AccessShaderReadBit | VkAccessFlagBits.AccessInputAttachmentReadBit;
-        }
-
-        var pmemory_barrier = &image_memory_barrier;
-
-        var src_stages = VkPipelineStageFlagBits.PipelineStageTopOfPipeBit;
-        var dest_stages = VkPipelineStageFlagBits.PipelineStageTopOfPipeBit;
-
-        Vk.CmdPipelineBarrier(cmdbuffer, src_stages, dest_stages, 0, 0, null, 0, null, 1, pmemory_barrier);
+        Vk.CmdPipelineBarrier(commandBuffer, srcStageMask, destStageMask, 0, 0, null, 0, null, 1, &imageMemoryBarrier);
     }
 
     private static VulkanFrameBuffers CreateFrameBuffers(in VulkanDevice device, VkSurfaceKHR surface, VkQueue queue, int winWidth, int winHeight, VkSwapchainKHR oldSwapchain)
     {
         var supportsPresent = 0;
-        Vk.GetPhysicalDeviceSurfaceSupportKHR(device.gpu, device.graphicsQueueFamilyIndex, surface, &supportsPresent);
+        Vk.GetPhysicalDeviceSurfaceSupportKHR(device.PhysicalDevice, device.GraphicsQueueFamilyIndex, surface, &supportsPresent);
         if (supportsPresent == 0)
             throw new Exception("Not supported");
 
-        var setup_cmd_buffer = CreateCmdBuffer(device.device, device.commandPool, 1);
-
-        var cmd_buf_info = new VkCommandBufferBeginInfo
+        var setupCommandBuffer = CreateCommandBuffers(device.Device, device.CommandPool, 1);
+        var bufferBeginInfo = new VkCommandBufferBeginInfo
         {
             sType = VkStructureType.StructureTypeCommandBufferBeginInfo,
         };
-        Vk.BeginCommandBuffer(setup_cmd_buffer[0], &cmd_buf_info);
 
-        var res = VkResult.Success;
-        var colorFormat = VkFormat.FormatB8g8r8a8Unorm;
-        VkColorSpaceKHR colorSpace;
+        Vk.BeginCommandBuffer(setupCommandBuffer[0], &bufferBeginInfo);
+
         // Get the list of VkFormats that are supported:
         var formatCount = 0U;
-        res = Vk.GetPhysicalDeviceSurfaceFormatsKHR(device.gpu, surface, &formatCount, null);
+        var res = Vk.GetPhysicalDeviceSurfaceFormatsKHR(device.PhysicalDevice, surface, &formatCount, null);
         Debug.Assert(res == VkResult.Success);
         var surfFormats = stackalloc VkSurfaceFormatKHR[(int)formatCount];
 
-        res = Vk.GetPhysicalDeviceSurfaceFormatsKHR(device.gpu, surface, &formatCount, surfFormats);
+        res = Vk.GetPhysicalDeviceSurfaceFormatsKHR(device.PhysicalDevice, surface, &formatCount, surfFormats);
         Debug.Assert(res == VkResult.Success);
-        // If the format list includes just one entry of VK_FORMAT_UNDEFINED,
-        // the surface has no preferred format.  Otherwise, at least one
-        // supported format will be returned.
-        if (formatCount == 1 && surfFormats[0].format == VkFormat.FormatUndefined)
-        {
-            colorFormat = VkFormat.FormatB8g8r8a8Unorm;
-        }
-        else
-        {
-            Debug.Assert(formatCount >= 1);
-            colorFormat = surfFormats[0].format;
-        }
 
-        colorSpace = surfFormats[0].colorSpace;
-        colorFormat = VkFormat.FormatB8g8r8a8Unorm;
+        if (formatCount != 1 || surfFormats[0].format != VkFormat.FormatUndefined) 
+            Debug.Assert(formatCount >= 1);
+
+        var colorSpace = surfFormats[0].colorSpace;
+        var colorFormat = VkFormat.FormatB8g8r8a8Unorm;
 
         // Check the surface capabilities and formats
         VkSurfaceCapabilitiesKHR surfCapabilities;
-        res = Vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device.gpu, surface, &surfCapabilities);
+        res = Vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device.PhysicalDevice, surface, &surfCapabilities);
         Debug.Assert(res == VkResult.Success);
 
-        VkExtent2D buffer_size;
+        VkExtent2D bufferSize;
         // width and height are either both -1, or both not -1.
         if (surfCapabilities.currentExtent.width == uint.MaxValue)
         {
-            buffer_size.width = (uint)winWidth;
-            buffer_size.height = (uint)winHeight;
+            bufferSize.width = (uint)winWidth;
+            bufferSize.height = (uint)winHeight;
         }
         else
         {
             // If the surface size is defined, the swap chain size must match
-            buffer_size = surfCapabilities.currentExtent;
+            bufferSize = surfCapabilities.currentExtent;
         }
 
-        var depth = CreateDepthBuffer(device, buffer_size.width, buffer_size.height);
-
-        var render_pass = CreateRenderPass(device.device, colorFormat, depth.format);
-
-        var swapchainPresentMode = VkPresentModeKHR.PresentModeFifoKhr;
+        var depth = CreateDepthBuffer(device, bufferSize.width, bufferSize.height);
+        var renderPass = CreateRenderPass(device.Device, colorFormat, depth.Format);
 
         var presentModeCount = 0U;
-        Vk.GetPhysicalDeviceSurfacePresentModesKHR(device.gpu, surface, &presentModeCount, null);
+        Vk.GetPhysicalDeviceSurfacePresentModesKHR(device.PhysicalDevice, surface, &presentModeCount, null);
         Debug.Assert(presentModeCount > 0);
 
         var presentModes = stackalloc VkPresentModeKHR[(int)presentModeCount];
-        Vk.GetPhysicalDeviceSurfacePresentModesKHR(device.gpu, surface, &presentModeCount, presentModes);
+        Vk.GetPhysicalDeviceSurfacePresentModesKHR(device.PhysicalDevice, surface, &presentModeCount, presentModes);
 
-        for (var m = 0; m < presentModeCount; m++)
+        var swapchainPresentMode = VkPresentModeKHR.PresentModeFifoKhr;
+        for (var i = 0; i < presentModeCount; i++)
         {
-            if (presentModes[m] == VkPresentModeKHR.PresentModeMailboxKhr)
+            if (presentModes[i] == VkPresentModeKHR.PresentModeMailboxKhr)
             {
                 swapchainPresentMode = VkPresentModeKHR.PresentModeMailboxKhr;
                 break;
             }
 
-            if ((swapchainPresentMode != VkPresentModeKHR.PresentModeMailboxKhr) && (presentModes[m] == VkPresentModeKHR.PresentModeImmediateKhr))
-            {
+            if (presentModes[i] == VkPresentModeKHR.PresentModeImmediateKhr) 
                 swapchainPresentMode = VkPresentModeKHR.PresentModeImmediateKhr;
-            }
         }
 
-        VkSurfaceTransformFlagBitsKHR preTransform;
+        var preTransform = default(VkSurfaceTransformFlagBitsKHR);
         if ((surfCapabilities.supportedTransforms & VkSurfaceTransformFlagBitsKHR.SurfaceTransformIdentityBitKhr) != 0)
-        {
             preTransform = VkSurfaceTransformFlagBitsKHR.SurfaceTransformIdentityBitKhr;
-        }
         else
-        {
             preTransform = surfCapabilities.currentTransform;
-        }
 
         // Determine the number of VkImage's to use in the swap chain (we desire to
         // own only 1 image at a time, besides the images being displayed and
         // queued for display):
         var desiredNumberOfSwapchainImages = Math.Max(surfCapabilities.minImageCount + 1, 3);
-        if ((surfCapabilities.maxImageCount > 0) && (desiredNumberOfSwapchainImages > surfCapabilities.maxImageCount))
+        if (surfCapabilities.maxImageCount > 0 && desiredNumberOfSwapchainImages > surfCapabilities.maxImageCount)
         {
             // Application must settle for fewer images than desired:
             desiredNumberOfSwapchainImages = surfCapabilities.maxImageCount;
@@ -636,7 +603,7 @@ internal unsafe class VulkanSurface : Surface
             minImageCount = desiredNumberOfSwapchainImages,
             imageFormat = colorFormat,
             imageColorSpace = colorSpace,
-            imageExtent = buffer_size,
+            imageExtent = bufferSize,
             imageUsage = VkImageUsageFlagBits.ImageUsageColorAttachmentBit,
             preTransform = preTransform,
             compositeAlpha = VkCompositeAlphaFlagBitsKHR.CompositeAlphaOpaqueBitKhr,
@@ -647,57 +614,54 @@ internal unsafe class VulkanSurface : Surface
             clipped = 1,
         };
 
-        VkSwapchainKHR swap_chain;
-        res = Vk.CreateSwapchainKHR(device.device, &swapchainInfo, null, &swap_chain);
+        VkSwapchainKHR swapchain;
+        res = Vk.CreateSwapchainKHR(device.Device, &swapchainInfo, null, &swapchain);
         Debug.Assert(res == VkResult.Success);
 
-        if (oldSwapchain != VkSwapchainKHR.Zero)
-        {
-            Vk.DestroySwapchainKHR(device.device, oldSwapchain, null);
-        }
+        if (oldSwapchain != VkSwapchainKHR.Zero) 
+            Vk.DestroySwapchainKHR(device.Device, oldSwapchain, null);
 
-        uint swapchain_image_count;
-        res = Vk.GetSwapchainImagesKHR(device.device, swap_chain, &swapchain_image_count, null);
+        uint swapchainImageCount;
+        res = Vk.GetSwapchainImagesKHR(device.Device, swapchain, &swapchainImageCount, null);
         Debug.Assert(res == VkResult.Success);
 
-        var swapchainImages = stackalloc VkImage[(int)swapchain_image_count];
+        var swapchainImages = stackalloc VkImage[(int)swapchainImageCount];
 
-        res = Vk.GetSwapchainImagesKHR(device.device, swap_chain, &swapchain_image_count, swapchainImages);
+        res = Vk.GetSwapchainImagesKHR(device.Device, swapchain, &swapchainImageCount, swapchainImages);
         Debug.Assert(res == VkResult.Success);
 
-        var swap_chain_buffers = new VulkanSwapchain[swapchain_image_count];
-        for (var i = 0; i < swapchain_image_count; i++)
-        {
-            swap_chain_buffers[i] = CreateSwapchainBuffers(device, colorFormat, setup_cmd_buffer[0], swapchainImages[i]);
-        }
+        var swapChainBuffers = new VulkanSwapchain[swapchainImageCount];
+        for (var i = 0; i < swapchainImageCount; i++) 
+            swapChainBuffers[i] = CreateSwapchainBuffers(device, colorFormat, setupCommandBuffer[0], swapchainImages[i]);
 
         var attachments = stackalloc VkImageView[2];
-        attachments[1] = depth.view;
+        attachments[1] = depth.ImageView;
 
-        var fb_info = new VkFramebufferCreateInfo
+        var framebufferCreateInfo = new VkFramebufferCreateInfo
         {
             sType = VkStructureType.StructureTypeFramebufferCreateInfo,
-            renderPass = render_pass,
+            renderPass = renderPass,
             attachmentCount = 2,
             pAttachments = attachments,
-            width = buffer_size.width,
-            height = buffer_size.height,
+            width = bufferSize.width,
+            height = bufferSize.height,
             layers = 1,
         };
 
-        var framebuffers = new VkFramebuffer [swapchain_image_count];
+        var framebuffers = new VkFramebuffer [swapchainImageCount];
         fixed (VkFramebuffer* ptr = framebuffers)
         {
-            for (var i = 0; i < swapchain_image_count; i++)
+            for (var i = 0; i < swapchainImageCount; i++)
             {
-                attachments[0] = swap_chain_buffers[i].view;
-                res = Vk.CreateFramebuffer(device.device, &fb_info, null, &ptr[i]);
+                attachments[0] = swapChainBuffers[i].ImageView;
+                res = Vk.CreateFramebuffer(device.Device, &framebufferCreateInfo, null, &ptr[i]);
                 Debug.Assert(res == VkResult.Success);
             }
         }
 
-        Vk.EndCommandBuffer(setup_cmd_buffer[0]);
-        fixed (VkCommandBuffer* ptr = setup_cmd_buffer)
+        Vk.EndCommandBuffer(setupCommandBuffer[0]);
+
+        fixed (VkCommandBuffer* ptr = setupCommandBuffer)
         {
             var submitInfo = new VkSubmitInfo
             {
@@ -709,39 +673,37 @@ internal unsafe class VulkanSurface : Surface
             Vk.QueueSubmit(queue, 1, &submitInfo, VkFence.Zero);
             Vk.QueueWaitIdle(queue);
 
-            Vk.FreeCommandBuffers(device.device, device.commandPool, 1, ptr);
+            Vk.FreeCommandBuffers(device.Device, device.CommandPool, 1, ptr);
         }
 
         var buffer = new VulkanFrameBuffers
         {
-            swap_chain = swap_chain,
-            swap_chain_buffers = swap_chain_buffers,
-            swapchain_image_count = swapchain_image_count,
-            framebuffers = framebuffers,
-            current_frame_buffer = 0,
-            format = colorFormat,
-            buffer_size = buffer_size,
-            render_pass = render_pass,
-            depth = depth,
-            present_complete_semaphore = new VkSemaphore[swapchain_image_count],
-            render_complete_semaphore = new VkSemaphore[swapchain_image_count],
-            flight_fence = new VkFence[swapchain_image_count],
+            Swapchain = swapchain,
+            SwapchainBuffers = swapChainBuffers,
+            Framebuffers = framebuffers,
+            CurrentFrameBuffer = 0,
+            BufferSize = bufferSize,
+            RenderPass = renderPass,
+            DepthBuffer = depth,
+            PresentCompleteSemaphore = new VkSemaphore[swapchainImageCount],
+            RenderCompleteSemaphore = new VkSemaphore[swapchainImageCount],
+            FlightFence = new VkFence[swapchainImageCount],
         };
 
         var presentCompleteSemaphoreCreateInfo = new VkSemaphoreCreateInfo { sType = VkStructureType.StructureTypeSemaphoreCreateInfo };
         var fenceCreateInfo = new VkFenceCreateInfo { sType = VkStructureType.StructureTypeFenceCreateInfo };
-        for (var i = 0; i < swapchain_image_count; i++)
+        for (var i = 0; i < swapchainImageCount; i++)
         {
-            fixed (VkSemaphore* ptr = &buffer.present_complete_semaphore[i])
-                res = Vk.CreateSemaphore(device.device, &presentCompleteSemaphoreCreateInfo, null, ptr);
+            fixed (VkSemaphore* ptr = &buffer.PresentCompleteSemaphore[i])
+                res = Vk.CreateSemaphore(device.Device, &presentCompleteSemaphoreCreateInfo, null, ptr);
             Debug.Assert(res == VkResult.Success);
 
-            fixed (VkSemaphore* ptr = &buffer.render_complete_semaphore[i])
-                res = Vk.CreateSemaphore(device.device, &presentCompleteSemaphoreCreateInfo, null, ptr);
+            fixed (VkSemaphore* ptr = &buffer.RenderCompleteSemaphore[i])
+                res = Vk.CreateSemaphore(device.Device, &presentCompleteSemaphoreCreateInfo, null, ptr);
             Debug.Assert(res == VkResult.Success);
 
-            fixed (VkFence* ptr = &buffer.flight_fence[i])
-                res = Vk.CreateFence(device.device, &fenceCreateInfo, null, ptr);
+            fixed (VkFence* ptr = &buffer.FlightFence[i])
+                res = Vk.CreateFence(device.Device, &fenceCreateInfo, null, ptr);
             Debug.Assert(res == VkResult.Success);
         }
 
@@ -753,51 +715,45 @@ internal unsafe class VulkanSurface : Surface
         var res = Vk.QueueWaitIdle(queue);
         Debug.Assert(res == VkResult.Success);
 
-        for (var i = 0; i < buffer.swapchain_image_count; ++i)
+        for (var i = 0; i < buffer.SwapchainCount; ++i)
         {
-            if (buffer.present_complete_semaphore[i] != VkSemaphore.Zero)
-            {
-                Vk.DestroySemaphore(device.device, buffer.present_complete_semaphore[i], null);
-            }
+            if (buffer.PresentCompleteSemaphore[i] != VkSemaphore.Zero) 
+                Vk.DestroySemaphore(device.Device, buffer.PresentCompleteSemaphore[i], null);
 
-            if (buffer.render_complete_semaphore[i] != VkSemaphore.Zero)
-            {
-                Vk.DestroySemaphore(device.device, buffer.render_complete_semaphore[i], null);
-            }
+            if (buffer.RenderCompleteSemaphore[i] != VkSemaphore.Zero) 
+                Vk.DestroySemaphore(device.Device, buffer.RenderCompleteSemaphore[i], null);
 
-            if (buffer.flight_fence[i] != VkFence.Zero)
-            {
-                Vk.DestroyFence(device.device, buffer.flight_fence[i], null);
-            }
+            if (buffer.FlightFence[i] != VkFence.Zero) 
+                Vk.DestroyFence(device.Device, buffer.FlightFence[i], null);
         }
 
-        for (var i = 0; i < buffer.swapchain_image_count; ++i)
+        for (var i = 0; i < buffer.SwapchainCount; ++i)
         {
-            Vk.DestroyImageView(device.device, buffer.swap_chain_buffers[i].view, null);
-            Vk.DestroyFramebuffer(device.device, buffer.framebuffers[i], null);
+            Vk.DestroyImageView(device.Device, buffer.SwapchainBuffers[i].ImageView, null);
+            Vk.DestroyFramebuffer(device.Device, buffer.Framebuffers[i], null);
         }
 
-        Vk.DestroyImageView(device.device, buffer.depth.view, null);
-        Vk.DestroyImage(device.device, buffer.depth.image, null);
-        Vk.FreeMemory(device.device, buffer.depth.mem, null);
+        Vk.DestroyImageView(device.Device, buffer.DepthBuffer.ImageView, null);
+        Vk.DestroyImage(device.Device, buffer.DepthBuffer.Image, null);
+        Vk.FreeMemory(device.Device, buffer.DepthBuffer.DeviceMemory, null);
 
-        Vk.DestroyRenderPass(device.device, buffer.render_pass, null);
-        Vk.DestroySwapchainKHR(device.device, buffer.swap_chain, null);
+        Vk.DestroyRenderPass(device.Device, buffer.RenderPass, null);
+        Vk.DestroySwapchainKHR(device.Device, buffer.Swapchain, null);
 
-        buffer.framebuffers = null!;
-        buffer.swap_chain_buffers = null!;
-        buffer.present_complete_semaphore = null!;
-        buffer.render_complete_semaphore = null!;
-        buffer.flight_fence = null!;
+        buffer.Framebuffers = null!;
+        buffer.SwapchainBuffers = null!;
+        buffer.PresentCompleteSemaphore = null!;
+        buffer.RenderCompleteSemaphore = null!;
+        buffer.FlightFence = null!;
     }
 
     private class VulkanFrameBuffer : VkNvgFrameBuffer
     {
         private readonly VulkanSurface _surface;
 
-        public override VkRenderPass RenderPass => _surface._frameBuffers.render_pass;
-        public override uint SwapChainImageCount => _surface._frameBuffers.swapchain_image_count;
-        public override uint CurrentFrame => _surface._frameBuffers.current_frame;
+        public override VkRenderPass RenderPass => _surface._frameBuffers.RenderPass;
+        public override uint SwapChainImageCount => _surface._frameBuffers.SwapchainCount;
+        public override uint CurrentFrame => _surface._frameBuffers.CurrentFrame;
 
         public VulkanFrameBuffer(VulkanSurface surface)
         {

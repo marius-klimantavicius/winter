@@ -4,22 +4,21 @@ namespace Marius.Winter.Forms.Vulkan;
 
 internal struct VulkanFrameBuffers
 {
-    public VkSwapchainKHR swap_chain;
-    public VulkanSwapchain[] swap_chain_buffers;
-    public uint swapchain_image_count;
-    public VkFramebuffer[] framebuffers;
+    public VkSwapchainKHR Swapchain;
+    public VulkanSwapchain[] SwapchainBuffers;
+    public uint SwapchainCount => (uint)SwapchainBuffers.Length;
+    public VkFramebuffer[] Framebuffers;
 
-    public uint current_frame_buffer;
-    public uint current_frame;
-    public uint num_swaps;
+    public uint CurrentFrameBuffer;
+    public uint CurrentFrame;
+    public uint SwapCount;
 
-    public VkExtent2D buffer_size;
+    public VkExtent2D BufferSize;
 
-    public VkRenderPass render_pass;
+    public VkRenderPass RenderPass;
 
-    public VkFormat format;
-    public VulkanDepthBuffer depth;
-    public VkSemaphore[] present_complete_semaphore;
-    public VkSemaphore[] render_complete_semaphore;
-    public VkFence[] flight_fence;
+    public VulkanDepthBuffer DepthBuffer;
+    public VkSemaphore[] PresentCompleteSemaphore;
+    public VkSemaphore[] RenderCompleteSemaphore;
+    public VkFence[] FlightFence;
 }

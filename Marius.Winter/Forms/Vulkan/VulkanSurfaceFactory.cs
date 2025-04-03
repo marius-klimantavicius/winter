@@ -20,7 +20,7 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
     {
         _enableDebugLayer = enableDebugLayer;
     }
-    
+
     public override Surface Create(Vector2i size, bool isFullScreen, bool resizable)
     {
         VKLoader.Init();
@@ -74,8 +74,8 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
 
         var executionQueue = default(VkQueue);
         var presentQueue = default(VkQueue);
-        Vk.GetDeviceQueue(device.device, device.graphicsQueueFamilyIndex, 0, &executionQueue);
-        Vk.GetDeviceQueue(device.device, device.presentIndex, 0, &presentQueue);
+        Vk.GetDeviceQueue(device.Device, device.GraphicsQueueFamilyIndex, 0, &executionQueue);
+        Vk.GetDeviceQueue(device.Device, device.PresentIndex, 0, &presentQueue);
 
         if (!resizable)
             Toolkit.Window.SetBorderStyle(window, WindowBorderStyle.FixedBorder);
@@ -135,7 +135,7 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
         if (result != VkResult.Success)
             throw new Exception($"Failed to create Vulkan instance: {result}");
 
-        for (var i =0 ; i <required.Length + 2; i++)
+        for (var i = 0; i < required.Length + 2; i++)
             Marshal.FreeCoTaskMem((nint)extensions[i]);
 
         if (enableDebugLayer)
@@ -177,47 +177,47 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
         return instance;
     }
 
-    private static VulkanDevice CreateVulkanDevice(VkPhysicalDevice gpu, VkSurfaceKHR surface, bool isDebugEnabled, out VkNvgExt ext)
+    private static VulkanDevice CreateVulkanDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, bool isDebugEnabled, out VkNvgExt ext)
     {
         var device = new VulkanDevice
         {
-            gpu = gpu,
+            PhysicalDevice = physicalDevice,
         };
-        Vk.GetPhysicalDeviceMemoryProperties(gpu, &device.memoryProperties);
-        Vk.GetPhysicalDeviceProperties(gpu, &device.gpuProperties);
+        Vk.GetPhysicalDeviceMemoryProperties(physicalDevice, &device.PhysicalDeviceMemoryProperties);
+        Vk.GetPhysicalDeviceProperties(physicalDevice, &device.PhysicalDeviceProperties);
 
         var queueFamilyPropertiesCount = 0U;
-        Vk.GetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, null);
+        Vk.GetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, null);
 
-        device.queueFamilyProperties = new VkQueueFamilyProperties[queueFamilyPropertiesCount];
+        device.QueueFamilyProperties = new VkQueueFamilyProperties[queueFamilyPropertiesCount];
 
-        fixed (VkQueueFamilyProperties* ptr = device.queueFamilyProperties)
-            Vk.GetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, ptr);
+        fixed (VkQueueFamilyProperties* ptr = device.QueueFamilyProperties)
+            Vk.GetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, ptr);
 
-        device.graphicsQueueFamilyIndex = uint.MaxValue;
-        device.presentIndex = uint.MaxValue;
-        for (var i = 0U; i < device.queueFamilyProperties.Length; ++i)
+        device.GraphicsQueueFamilyIndex = uint.MaxValue;
+        device.PresentIndex = uint.MaxValue;
+        for (var i = 0U; i < device.QueueFamilyProperties.Length; ++i)
         {
-            var properties = device.queueFamilyProperties[i];
+            var properties = device.QueueFamilyProperties[i];
             if ((properties.queueFlags & VkQueueFlagBits.QueueGraphicsBit) != 0)
-                device.graphicsQueueFamilyIndex = i;
+                device.GraphicsQueueFamilyIndex = i;
 
             var presentSupport = 0;
-            Vk.GetPhysicalDeviceSurfaceSupportKHR(gpu, i, surface, &presentSupport);
+            Vk.GetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
             if (presentSupport != 0)
-                device.presentIndex = i;
+                device.PresentIndex = i;
 
-            if (device.presentIndex != uint.MaxValue && device.graphicsQueueFamilyIndex != uint.MaxValue)
+            if (device.PresentIndex != uint.MaxValue && device.GraphicsQueueFamilyIndex != uint.MaxValue)
                 break;
         }
 
         var queuePriorities = stackalloc float[1] { 0.0f };
-        var queue_info = new VkDeviceQueueCreateInfo
+        var queueCreateInfo = new VkDeviceQueueCreateInfo
         {
             sType = VkStructureType.StructureTypeDeviceQueueCreateInfo,
             queueCount = 1,
             pQueuePriorities = queuePriorities,
-            queueFamilyIndex = device.graphicsQueueFamilyIndex,
+            queueFamilyIndex = device.GraphicsQueueFamilyIndex,
         };
 
         var extendedDynamicStateFeatures = new VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
@@ -237,24 +237,23 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
             sType = VkStructureType.StructureTypePhysicalDeviceFeatures2,
             pNext = &extendedDynamicStateFeatures,
         };
-        Vk.GetPhysicalDeviceFeatures2(gpu, &physicalDeviceFeatures2);
-
-        var enableDynamicState = false;
-        var enableDynamicState3 = false;
+        Vk.GetPhysicalDeviceFeatures2(physicalDevice, &physicalDeviceFeatures2);
 
         var count = 0U;
 
-        Vk.EnumerateDeviceExtensionProperties(gpu, null, &count, null);
+        Vk.EnumerateDeviceExtensionProperties(physicalDevice, null, &count, null);
 
         ext = new VkNvgExt();
 
+        var enableDynamicState = false;
+        var enableDynamicState3 = false;
         var enabledExtensionCount = 1;
         var enabledExtensions = stackalloc byte*[16];
 
         var extensions = new VkExtensionProperties[count];
         fixed (VkExtensionProperties* ptr = extensions)
         {
-            Vk.EnumerateDeviceExtensionProperties(gpu, null, &count, ptr);
+            Vk.EnumerateDeviceExtensionProperties(physicalDevice, null, &count, ptr);
 
             physicalDeviceFeatures2.pNext = null;
             extendedDynamicStateFeatures.pNext = null;
@@ -282,45 +281,38 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
             }
         }
 
-        var ii = 0;
-        enabledExtensions[ii] = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.KhrSwapchainExtensionName);
+        *enabledExtensions++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.KhrSwapchainExtensionName);
         if (enableDynamicState)
-        {
-            ii++;
-            enabledExtensions[ii] = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.ExtExtendedDynamicStateExtensionName);
-        }
+            *enabledExtensions++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.ExtExtendedDynamicStateExtensionName);
 
         if (enableDynamicState3)
-        {
-            ii++;
-            enabledExtensions[ii] = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.ExtExtendedDynamicState3ExtensionName);
-        }
+            *enabledExtensions++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.ExtExtendedDynamicState3ExtensionName);
 
         var deviceInfo = new VkDeviceCreateInfo
         {
             sType = VkStructureType.StructureTypeDeviceCreateInfo,
             queueCreateInfoCount = 1,
-            pQueueCreateInfos = &queue_info,
+            pQueueCreateInfos = &queueCreateInfo,
             enabledExtensionCount = (uint)enabledExtensionCount,
             ppEnabledExtensionNames = enabledExtensions,
             pEnabledFeatures = null,
             pNext = &physicalDeviceFeatures2,
         };
-        
-        var res = Vk.CreateDevice(gpu, &deviceInfo, null, &device.device);
+
+        var res = Vk.CreateDevice(physicalDevice, &deviceInfo, null, &device.Device);
         Debug.Assert(res == VkResult.Success);
 
-        for (var i =0; i < enabledExtensionCount; i++)
+        for (var i = 0; i < enabledExtensionCount; i++)
             Marshal.FreeCoTaskMem((nint)enabledExtensions[i]);
-        
+
         /* Create a command pool to allocate our command buffer from */
-        var cmd_pool_info = new VkCommandPoolCreateInfo
+        var commandPoolCreateInfo = new VkCommandPoolCreateInfo
         {
             sType = VkStructureType.StructureTypeCommandPoolCreateInfo,
-            queueFamilyIndex = device.graphicsQueueFamilyIndex,
+            queueFamilyIndex = device.GraphicsQueueFamilyIndex,
             flags = VkCommandPoolCreateFlagBits.CommandPoolCreateResetCommandBufferBit,
         };
-        res = Vk.CreateCommandPool(device.device, &cmd_pool_info, null, &device.commandPool);
+        res = Vk.CreateCommandPool(device.Device, &commandPoolCreateInfo, null, &device.CommandPool);
         Debug.Assert(res == VkResult.Success);
 
         return device;
@@ -333,6 +325,7 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
 
         if (messageSeverity == VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt)
             Debugger.Break();
+
         return 0;
     }
 }

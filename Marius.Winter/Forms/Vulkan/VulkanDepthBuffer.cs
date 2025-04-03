@@ -4,9 +4,9 @@ namespace Marius.Winter.Forms.Vulkan;
 
 internal struct VulkanDepthBuffer
 {
-    public VkFormat format;
+    public VkFormat Format;
 
-    public VkImage image;
-    public VkDeviceMemory mem;
-    public VkImageView view;
+    public VkImage Image;
+    public VkDeviceMemory DeviceMemory;
+    public VkImageView ImageView;
 }
