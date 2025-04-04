@@ -97,10 +97,10 @@ public class Screen : Widget
         _redrawRequested = false;
         _cursor = Cursor.Arrow;
 
-        EventQueue.EventRaised += HandleEvent;
-
         _surface = surfaceFactory.Create(size, _isFullscreen, resizable);
         _context = _surface.Context;
+
+        EventQueue.EventRaised += HandleEvent;
 
         Toolkit.Window.GetClientSize(_surface.NativeWindow, out _size);
         Toolkit.Window.GetFramebufferSize(_surface.NativeWindow, out _fbSize);

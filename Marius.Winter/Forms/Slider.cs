@@ -9,7 +9,7 @@ namespace Marius.Winter.Forms;
 public class Slider : Widget
 {
     private const float TOLERANCE = 0.000001f;
-    
+
     protected float _value;
     protected float _minValue;
     protected float _maxValue;
@@ -74,6 +74,9 @@ public class Slider : Widget
 
     public override void Draw(NvgContext context)
     {
+        if (_size.Y == 0)
+            return;
+
         var center = _position.ToVector2() + _size.ToVector2() * 0.5f;
         var kr = (float)(int)(_size.Y * 0.4f);
         var shadow = 3f;
@@ -130,7 +133,7 @@ public class Slider : Widget
             return false;
 
         position -= AbsolutePosition;
-        
+
         var kr = (float)(int)(_size.Y * 0.4f);
         const float shadow = 3f;
         var startX = kr + shadow - 1;
