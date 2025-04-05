@@ -8,7 +8,7 @@ using OpenTK.Platform;
 
 namespace Marius.Winter.Forms.Vulkan;
 
-internal unsafe class VulkanSurface : Surface
+internal unsafe class VulkanBackend : Backend
 {
     private readonly VulkanDevice _device;
 
@@ -18,7 +18,7 @@ internal unsafe class VulkanSurface : Surface
     private readonly VkQueue _executionQueue;
     private readonly VkQueue _presentQueue;
 
-    private readonly Renderer _renderer;
+    private readonly VulkanRenderer _renderer;
 
     private VulkanFrameBuffers _frameBuffers;
     private Vector2i _size;
@@ -27,7 +27,7 @@ internal unsafe class VulkanSurface : Surface
     public override WindowHandle NativeWindow { get; }
     public override NvgContext Context { get; }
 
-    public VulkanSurface(WindowHandle window, VulkanDevice device, VkSurfaceKHR surface, VkQueue executionQueue, VkQueue presentQueue, VkNvgExt ext)
+    public VulkanBackend(WindowHandle window, VulkanDevice device, VkSurfaceKHR surface, VkQueue executionQueue, VkQueue presentQueue, VulkanExtensions ext)
     {
         NativeWindow = window;
 
@@ -40,7 +40,7 @@ internal unsafe class VulkanSurface : Surface
         _commandBuffer = CreateCommandBuffers(device.Device, device.CommandPool, _frameBuffers.SwapchainCount);
         _secondaryCommandBuffer = CreateCommandBuffers(device.Device, device.CommandPool, _frameBuffers.SwapchainCount);
 
-        var createInfo = new VkNvgCreateInfo
+        var createInfo = new VulkanCreateInfo
         {
             Device = device.Device,
             PhysicalDevice = device.PhysicalDevice,
@@ -49,7 +49,7 @@ internal unsafe class VulkanSurface : Surface
             Extensions = ext,
         };
 
-        _renderer = new Renderer(createInfo, new VulkanFrameBuffer(this), executionQueue);
+        _renderer = new VulkanRenderer(createInfo, new VulkanFrameBuffer(this), executionQueue);
         Context = new NvgContext(_renderer);
     }
 
@@ -106,8 +106,7 @@ internal unsafe class VulkanSurface : Surface
         var beginInfo = new VkCommandBufferBeginInfo { sType = VkStructureType.StructureTypeCommandBufferBeginInfo };
         Vk.BeginCommandBuffer(commandBuffer, &beginInfo);
 
-        var clearValues
-            = stackalloc VkClearValue[2];
+        var clearValues = stackalloc VkClearValue[2];
         clearValues[0].color.float32[0] = backgroundColor.X;
         clearValues[0].color.float32[1] = backgroundColor.Y;
         clearValues[0].color.float32[2] = backgroundColor.Z;
@@ -747,17 +746,17 @@ internal unsafe class VulkanSurface : Surface
         buffer.FlightFence = null!;
     }
 
-    private class VulkanFrameBuffer : VkNvgFrameBuffer
+    private sealed class VulkanFrameBuffer : NvgSharp.OpenTK.Vulkan.VulkanFrameBuffer
     {
-        private readonly VulkanSurface _surface;
+        private readonly VulkanBackend _backend;
 
-        public override VkRenderPass RenderPass => _surface._frameBuffers.RenderPass;
-        public override uint SwapChainImageCount => _surface._frameBuffers.SwapchainCount;
-        public override uint CurrentFrame => _surface._frameBuffers.CurrentFrame;
+        public override VkRenderPass RenderPass => _backend._frameBuffers.RenderPass;
+        public override uint SwapChainImageCount => _backend._frameBuffers.SwapchainCount;
+        public override uint CurrentFrame => _backend._frameBuffers.CurrentFrame;
 
-        public VulkanFrameBuffer(VulkanSurface surface)
+        public VulkanFrameBuffer(VulkanBackend backend)
         {
-            _surface = surface;
+            _backend = backend;
         }
     }
 }

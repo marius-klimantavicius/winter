@@ -4,9 +4,9 @@ using OpenTK.Graphics.Vulkan;
 namespace NvgSharp.OpenTK.Vulkan;
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct VkNvgCreatePipelineKey
+internal struct VulkanCreatePipelineKey
 {
-    public VkNvgStencilSetting StencilStroke;
+    public VulkanStencilSetting StencilStroke;
     public bool StencilFill;
     public bool StencilTest;
     public bool EdgeAA;

@@ -5,9 +5,9 @@ using OpenTK.Graphics.Vulkan;
 
 namespace NvgSharp.OpenTK.Vulkan;
 
-internal unsafe partial class VkNvgContext
+internal unsafe partial class VulkanContext
 {
-    public VkNvgTexture CreateTexture(int w, int h)
+    public VulkanTexture CreateTexture(int w, int h)
     {
         var tex = AllocTexture();
 
@@ -127,7 +127,7 @@ internal unsafe partial class VkNvgContext
         return tex;
     }
 
-    public static int DeleteTexture(VkNvgTexture? tex, VkDevice device, VkAllocationCallbacks* allocator)
+    public static int DeleteTexture(VulkanTexture? tex, VkDevice device, VkAllocationCallbacks* allocator)
     {
         if (tex != null)
         {
@@ -167,18 +167,18 @@ internal unsafe partial class VkNvgContext
         return 0;
     }
 
-    public void UpdateTexture(VkNvgTexture tex, int x, int y, int w, int h, byte[] data)
+    public void UpdateTexture(VulkanTexture tex, int x, int y, int w, int h, byte[] data)
     {
         UpdateTexture(CreateInfo.Device, tex, x, y, w, h, data);
     }
 
-    public void GetTextureSize(VkNvgTexture tex, out int w, out int h)
+    public void GetTextureSize(VulkanTexture tex, out int w, out int h)
     {
         w = tex.Width;
         h = tex.Height;
     }
 
-    private VkNvgTexture AllocTexture()
+    private VulkanTexture AllocTexture()
     {
         for (var i = 0; i < Textures.Count; i++)
         {
@@ -186,12 +186,12 @@ internal unsafe partial class VkNvgContext
                 return Textures[i];
         }
 
-        var result = new VkNvgTexture(CreateInfo.Device, CreateInfo.Allocator);
+        var result = new VulkanTexture(CreateInfo.Device, CreateInfo.Allocator);
         Textures.Add(result);
         return result;
     }
 
-    private static void UpdateTexture(VkDevice device, VkNvgTexture tex, int dx, int dy, int w, int h, byte[] data)
+    private static void UpdateTexture(VkDevice device, VulkanTexture tex, int dx, int dy, int w, int h, byte[] data)
     {
         if (!tex.IsMapped)
         {
@@ -218,7 +218,7 @@ internal unsafe partial class VkNvgContext
     }
 
     // call it after UpdateTexture
-    private static void InitTexture(VkCommandBuffer cmdbuffer, VkQueue queue, VkNvgTexture tex)
+    private static void InitTexture(VkCommandBuffer cmdbuffer, VkQueue queue, VulkanTexture tex)
     {
         var beginInfo = new VkCommandBufferBeginInfo
         {

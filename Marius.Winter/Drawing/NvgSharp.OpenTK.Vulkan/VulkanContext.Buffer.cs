@@ -7,9 +7,9 @@ using OpenTK.Graphics.Vulkan;
 
 namespace NvgSharp.OpenTK.Vulkan;
 
-internal unsafe partial class VkNvgContext
+internal unsafe partial class VulkanContext
 {
-    private static VkNvgBuffer CreateBuffer<T>(VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, VkAllocationCallbacks* allocator, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memory_type, ReadOnlySpan<T> data)
+    private static VulkanBuffer CreateBuffer<T>(VkDevice device, VkPhysicalDeviceMemoryProperties memoryProperties, VkAllocationCallbacks* allocator, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memory_type, ReadOnlySpan<T> data)
         where T : unmanaged
     {
         var bufferCreateInfo = new VkBufferCreateInfo
@@ -45,7 +45,7 @@ internal unsafe partial class VkNvgContext
         data.CopyTo(mappedSpan);
 
         CheckResult(Vk.BindBufferMemory(device, buffer, mem, 0));
-        var buf = new VkNvgBuffer
+        var buf = new VulkanBuffer
         {
             Buffer = buffer,
             DeviceMemory = mem,
@@ -56,7 +56,7 @@ internal unsafe partial class VkNvgContext
         return buf;
     }
 
-    public static void DestroyBuffer(VkDevice device, VkAllocationCallbacks* allocator, ref VkNvgBuffer buffer)
+    public static void DestroyBuffer(VkDevice device, VkAllocationCallbacks* allocator, ref VulkanBuffer buffer)
     {
         if (buffer.IsInitialized)
         {
@@ -70,7 +70,7 @@ internal unsafe partial class VkNvgContext
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void UpdateBuffer<T>(VkDevice device, VkAllocationCallbacks* allocator, ref VkNvgBuffer buffer, VkPhysicalDeviceMemoryProperties memoryProperties, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memory_type, List<T> data)
+    public static void UpdateBuffer<T>(VkDevice device, VkAllocationCallbacks* allocator, ref VulkanBuffer buffer, VkPhysicalDeviceMemoryProperties memoryProperties, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memory_type, List<T> data)
         where T : unmanaged
     {
         var span = CollectionsMarshal.AsSpan(data);
@@ -78,14 +78,14 @@ internal unsafe partial class VkNvgContext
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void UpdateBuffer<T>(VkDevice device, VkAllocationCallbacks* allocator, ref VkNvgBuffer buffer, VkPhysicalDeviceMemoryProperties memoryProperties, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memory_type, Span<T> data)
+    public static void UpdateBuffer<T>(VkDevice device, VkAllocationCallbacks* allocator, ref VulkanBuffer buffer, VkPhysicalDeviceMemoryProperties memoryProperties, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memory_type, Span<T> data)
         where T : unmanaged
     {
         UpdateBuffer(device, allocator, ref buffer, memoryProperties, usage, memory_type, (ReadOnlySpan<T>)data);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void UpdateBuffer<T>(VkDevice device, VkAllocationCallbacks* allocator, ref VkNvgBuffer buffer, VkPhysicalDeviceMemoryProperties memoryProperties, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memory_type, ReadOnlySpan<T> data)
+    public static void UpdateBuffer<T>(VkDevice device, VkAllocationCallbacks* allocator, ref VulkanBuffer buffer, VkPhysicalDeviceMemoryProperties memoryProperties, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memory_type, ReadOnlySpan<T> data)
         where T : unmanaged
     {
         var size = (uint)(data.Length * sizeof(T));

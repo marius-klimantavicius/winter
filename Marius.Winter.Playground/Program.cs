@@ -1,5 +1,6 @@
 ﻿using FontStashSharp;
 using Marius.Winter.Forms;
+using Marius.Winter.Forms.OpenGL;
 using Microsoft.Extensions.FileProviders;
 using OpenTK.Mathematics;
 using OpenTK.Platform;
@@ -20,7 +21,7 @@ internal class Program
             }
         };
 
-        var screen = new Screen(new Vector2i(800, 600), new OpenGLSurfaceFactory());
+        var screen = new Screen(new Vector2i(800, 600), new OpenGlBackendFactory());
 
         var vpanel = new VScrollPanel(screen)
         {

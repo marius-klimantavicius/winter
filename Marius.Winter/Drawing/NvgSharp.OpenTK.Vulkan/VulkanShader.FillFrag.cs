@@ -2,9 +2,9 @@ using System;
 
 namespace NvgSharp.OpenTK.Vulkan;
 
-internal static class VkNvgShaderFillFrag
+internal static partial class VulkanShader
 {
-    public static ReadOnlySpan<uint> Shader =>
+    public static ReadOnlySpan<uint> FillFrag =>
     [
         0x07230203, 0x00010000, 0x000d000b, 0x0000014f, 0x00000000, 0x00020011, 0x00000001, 0x0006000b,
         0x00000001, 0x4c534c47, 0x6474732e, 0x3035342e, 0x00000000, 0x0003000e, 0x00000000, 0x00000001,

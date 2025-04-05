@@ -4,7 +4,7 @@ using OpenTK.Platform;
 
 namespace Marius.Winter.Forms;
 
-public abstract class Surface
+public abstract class Backend
 {
     public abstract WindowHandle NativeWindow { get; }
     public abstract NvgContext Context { get; }

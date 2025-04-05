@@ -13,7 +13,7 @@ public class Screen : Widget
 {
     private static readonly ConditionalWeakTable<WindowHandle, Screen> Screens = new ConditionalWeakTable<WindowHandle, Screen>();
 
-    protected readonly Surface _surface;
+    protected readonly Backend _backend;
     protected readonly NvgContext _context;
 
     protected CursorHandle[] _cursors;
@@ -33,7 +33,7 @@ public class Screen : Widget
     protected bool _isFullscreen;
     protected bool _redrawRequested;
 
-    public WindowHandle NativeWindow => _surface.NativeWindow;
+    public WindowHandle NativeWindow => _backend.NativeWindow;
 
     public new bool IsVisible
     {
@@ -84,7 +84,7 @@ public class Screen : Widget
     public Screen
     (
         Vector2i size,
-        SurfaceFactory surfaceFactory,
+        BackendFactory backendFactory,
         string caption = "Unnamed",
         bool resizable = true,
         bool isFullscreen = false
@@ -97,21 +97,21 @@ public class Screen : Widget
         _redrawRequested = false;
         _cursor = Cursor.Arrow;
 
-        _surface = surfaceFactory.Create(size, _isFullscreen, resizable);
-        _context = _surface.Context;
+        _backend = backendFactory.Create(size, _isFullscreen, resizable);
+        _context = _backend.Context;
 
         EventQueue.EventRaised += HandleEvent;
 
-        Toolkit.Window.GetClientSize(_surface.NativeWindow, out _size);
-        Toolkit.Window.GetFramebufferSize(_surface.NativeWindow, out _fbSize);
+        Toolkit.Window.GetClientSize(_backend.NativeWindow, out _size);
+        Toolkit.Window.GetFramebufferSize(_backend.NativeWindow, out _fbSize);
 
-        _pixelRatio = GetPixelRatio(_surface.NativeWindow);
+        _pixelRatio = GetPixelRatio(_backend.NativeWindow);
 
         if (_pixelRatio != 1 && !_isFullscreen)
-            Toolkit.Window.SetSize(_surface.NativeWindow, new Vector2i((int)(_size.X * _pixelRatio), (int)(_size.Y * _pixelRatio)));
+            Toolkit.Window.SetSize(_backend.NativeWindow, new Vector2i((int)(_size.X * _pixelRatio), (int)(_size.Y * _pixelRatio)));
 
-        _isVisible = Toolkit.Window.GetMode(_surface.NativeWindow) != WindowMode.Hidden;
-        Theme = Theme.Default;
+        _isVisible = Toolkit.Window.GetMode(_backend.NativeWindow) != WindowMode.Hidden;
+        _theme = Theme.Default;
         _mousePosition = new Vector2i(0, 0);
         _mouseState = 0;
         _modifiers = 0;
@@ -198,12 +198,12 @@ public class Screen : Widget
 
     public virtual void DrawSetup()
     {
-        _surface.PrepareFrame(_backgroundColor);
+        _backend.PrepareFrame(_backgroundColor);
     }
 
     public virtual void DrawTearDown()
     {
-        _surface.SubmitFrame();
+        _backend.SubmitFrame();
     }
 
     public virtual void DrawAll()

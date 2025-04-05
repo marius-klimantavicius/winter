@@ -3,18 +3,18 @@ using OpenTK.Graphics.Vulkan;
 
 namespace NvgSharp.OpenTK.Vulkan;
 
-internal unsafe partial class VkNvgContext
+internal unsafe partial class VulkanContext
 {
-    private VkNvgPipeline AllocPipeline()
+    private VulkanPipeline AllocPipeline()
     {
-        var result = new VkNvgPipeline();
+        var result = new VulkanPipeline();
         Pipelines.Add(result);
         return result;
     }
 
-    private VkNvgPipeline? FindPipeline(in VkNvgCreatePipelineKey pipelinekey)
+    private VulkanPipeline? FindPipeline(in VulkanCreatePipelineKey pipelinekey)
     {
-        VkNvgPipeline? pipeline = null;
+        VulkanPipeline? pipeline = null;
         var span = CollectionsMarshal.AsSpan(Pipelines);
         for (var i = 0; i < span.Length; i++)
         {
@@ -28,7 +28,7 @@ internal unsafe partial class VkNvgContext
         return pipeline;
     }
 
-    private VkNvgPipeline CreatePipeline(ref VkNvgCreatePipelineKey pipelinekey)
+    private VulkanPipeline CreatePipeline(ref VulkanCreatePipelineKey pipelinekey)
     {
         var device = CreateInfo.Device;
         var pipelineLayout = PipelineLayout;
@@ -192,7 +192,7 @@ internal unsafe partial class VkNvgContext
         return ret;
     }
 
-    private VkPipeline BindPipeline(VkCommandBuffer cmdBuffer, ref VkNvgCreatePipelineKey pipelinekey)
+    private VkPipeline BindPipeline(VkCommandBuffer cmdBuffer, ref VulkanCreatePipelineKey pipelinekey)
     {
         pipelinekey.ColorWriteMask = GetColorWriteMask(pipelinekey); // always set this before compare op
         var pipeline = FindPipeline(pipelinekey) ?? CreatePipeline(ref pipelinekey);
@@ -206,7 +206,7 @@ internal unsafe partial class VkNvgContext
         return pipeline.Pipeline;
     }
 
-    private int CompareCreatePipelineKey(in VkNvgCreatePipelineKey a, in VkNvgCreatePipelineKey b)
+    private int CompareCreatePipelineKey(in VulkanCreatePipelineKey a, in VulkanCreatePipelineKey b)
     {
         if (Ext.DynamicState)
         {
@@ -238,7 +238,7 @@ internal unsafe partial class VkNvgContext
         return 0;
     }
 
-    private static VkPipelineDepthStencilStateCreateInfo InitializeDepthStencilCreateInfo(ref VkNvgCreatePipelineKey pipelinekey)
+    private static VkPipelineDepthStencilStateCreateInfo InitializeDepthStencilCreateInfo(ref VulkanCreatePipelineKey pipelinekey)
     {
         var ds = new VkPipelineDepthStencilStateCreateInfo
         {
@@ -249,7 +249,7 @@ internal unsafe partial class VkNvgContext
             depthBoundsTestEnable = 0,
         };
 
-        if (pipelinekey.StencilStroke != VkNvgStencilSetting.Undefined)
+        if (pipelinekey.StencilStroke != VulkanStencilSetting.Undefined)
         {
             // enables
             ds.stencilTestEnable = 1;
@@ -265,15 +265,15 @@ internal unsafe partial class VkNvgContext
 
             switch (pipelinekey.StencilStroke)
             {
-                case VkNvgStencilSetting.Fill:
+                case VulkanStencilSetting.Fill:
                     ds.front.passOp = VkStencilOp.StencilOpIncrementAndClamp;
                     ds.back.passOp = VkStencilOp.StencilOpDecrementAndClamp;
                     break;
-                case VkNvgStencilSetting.DrawAA:
+                case VulkanStencilSetting.DrawAA:
                     ds.front.passOp = VkStencilOp.StencilOpKeep;
                     ds.back.passOp = VkStencilOp.StencilOpKeep;
                     break;
-                case VkNvgStencilSetting.Clear:
+                case VulkanStencilSetting.Clear:
                     ds.front.failOp = VkStencilOp.StencilOpZero;
                     ds.front.depthFailOp = VkStencilOp.StencilOpZero;
                     ds.front.passOp = VkStencilOp.StencilOpZero;
@@ -333,7 +333,7 @@ internal unsafe partial class VkNvgContext
         return ds;
     }
 
-    private static VkPipelineColorBlendAttachmentState CompositOperationToColorBlendAttachmentState(in VkNvgCreatePipelineKey pipelineKey)
+    private static VkPipelineColorBlendAttachmentState CompositOperationToColorBlendAttachmentState(in VulkanCreatePipelineKey pipelineKey)
     {
         var state = new VkPipelineColorBlendAttachmentState
         {
@@ -359,9 +359,9 @@ internal unsafe partial class VkNvgContext
         return state;
     }
 
-    private static VkColorComponentFlagBits GetColorWriteMask(in VkNvgCreatePipelineKey pipelineKey)
+    private static VkColorComponentFlagBits GetColorWriteMask(in VulkanCreatePipelineKey pipelineKey)
     {
-        if (pipelineKey.StencilStroke == VkNvgStencilSetting.Clear)
+        if (pipelineKey.StencilStroke == VulkanStencilSetting.Clear)
             return 0;
 
         if (pipelineKey.StencilFill)
@@ -370,7 +370,7 @@ internal unsafe partial class VkNvgContext
         return (VkColorComponentFlagBits)0xf;
     }
 
-    private static VkCullModeFlagBits GetCullMode(in VkNvgCreatePipelineKey pipelineKey)
+    private static VkCullModeFlagBits GetCullMode(in VulkanCreatePipelineKey pipelineKey)
     {
         if (pipelineKey.StencilFill)
             return VkCullModeFlagBits.CullModeNone;

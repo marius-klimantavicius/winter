@@ -10,18 +10,18 @@ using OpenTK.Platform;
 
 namespace Marius.Winter.Forms.Vulkan;
 
-public unsafe class VulkanSurfaceFactory : SurfaceFactory
+public unsafe class VulkanBackendFactory : BackendFactory
 {
     private readonly bool _enableDebugLayer;
 
     private VkDebugUtilsMessengerEXT _debugMessenger;
 
-    public VulkanSurfaceFactory(bool enableDebugLayer = true)
+    public VulkanBackendFactory(bool enableDebugLayer = true)
     {
         _enableDebugLayer = enableDebugLayer;
     }
 
-    public override Surface Create(Vector2i size, bool isFullScreen, bool resizable)
+    public override Backend Create(Vector2i size, bool isFullScreen, bool resizable)
     {
         VKLoader.Init();
 
@@ -80,7 +80,7 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
         if (!resizable)
             Toolkit.Window.SetBorderStyle(window, WindowBorderStyle.FixedBorder);
 
-        return new VulkanSurface(window, device, surface, executionQueue, presentQueue, ext);
+        return new VulkanBackend(window, device, surface, executionQueue, presentQueue, ext);
     }
 
     private VkInstance CreateVkInstance(bool enableDebugLayer)
@@ -177,7 +177,7 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
         return instance;
     }
 
-    private static VulkanDevice CreateVulkanDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, bool isDebugEnabled, out VkNvgExt ext)
+    private static VulkanDevice CreateVulkanDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, bool isDebugEnabled, out VulkanExtensions ext)
     {
         var device = new VulkanDevice
         {
@@ -243,7 +243,7 @@ public unsafe class VulkanSurfaceFactory : SurfaceFactory
 
         Vk.EnumerateDeviceExtensionProperties(physicalDevice, null, &count, null);
 
-        ext = new VkNvgExt();
+        ext = new VulkanExtensions();
 
         var enableDynamicState = false;
         var enableDynamicState3 = false;

@@ -3,7 +3,7 @@ using OpenTK.Graphics.Vulkan;
 
 namespace NvgSharp.OpenTK.Vulkan;
 
-public sealed unsafe class VkNvgTexture : IDisposable
+public sealed unsafe class VulkanTexture : IDisposable
 {
     private readonly VkDevice _device;
     private readonly VkAllocationCallbacks* _allocator;
@@ -21,13 +21,13 @@ public sealed unsafe class VkNvgTexture : IDisposable
     internal int Width;
     internal int Height;
 
-    internal VkNvgTexture(VkDevice device, VkAllocationCallbacks* allocator)
+    internal VulkanTexture(VkDevice device, VkAllocationCallbacks* allocator)
     {
         _device = device;
         _allocator = allocator;
     }
 
-    ~VkNvgTexture()
+    ~VulkanTexture()
     {
         Dispose();
     }
@@ -37,7 +37,7 @@ public sealed unsafe class VkNvgTexture : IDisposable
         GC.SuppressFinalize(this);
         try
         {
-            VkNvgContext.DeleteTexture(this, _device, _allocator);
+            VulkanContext.DeleteTexture(this, _device, _allocator);
         }
         catch
         {

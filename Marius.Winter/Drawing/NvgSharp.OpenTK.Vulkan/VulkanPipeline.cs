@@ -2,8 +2,8 @@ using OpenTK.Graphics.Vulkan;
 
 namespace NvgSharp.OpenTK.Vulkan;
 
-internal class VkNvgPipeline
+internal class VulkanPipeline
 {
-    public VkNvgCreatePipelineKey Key;
+    public VulkanCreatePipelineKey Key;
     public VkPipeline Pipeline;
 }

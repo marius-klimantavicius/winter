@@ -6,9 +6,9 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Platform;
 
-namespace Marius.Winter.Forms;
+namespace Marius.Winter.Forms.OpenGL;
 
-public class OpenGLSurfaceFactory : SurfaceFactory
+public class OpenGlBackendFactory : BackendFactory
 {
     private readonly bool _hasDepthBuffer;
     private readonly bool _hasStencilBuffer;
@@ -17,7 +17,7 @@ public class OpenGLSurfaceFactory : SurfaceFactory
 
     private bool _hasFloatBuffer;
 
-    public OpenGLSurfaceFactory(
+    public OpenGlBackendFactory(
         bool hasDepthBuffer = true,
         bool hasStencilBuffer = true,
         bool hasFloatBuffer = false,
@@ -32,7 +32,7 @@ public class OpenGLSurfaceFactory : SurfaceFactory
         _glMinor = glMinor;
     }
 
-    public override Surface Create(Vector2i size, bool isFullScreen, bool resizable)
+    public override Backend Create(Vector2i size, bool isFullScreen, bool resizable)
     {
         var colorBits = 8;
         var depthBits = 0;
@@ -99,22 +99,22 @@ public class OpenGLSurfaceFactory : SurfaceFactory
         if (!resizable)
             Toolkit.Window.SetBorderStyle(window, WindowBorderStyle.FixedBorder);
 
-        return new OpenGLSurface(window, _hasStencilBuffer);
+        return new OpenGlBackend(window, _hasStencilBuffer);
     }
 
-    private class OpenGLSurface : Surface
+    private sealed class OpenGlBackend : Backend
     {
         private readonly WindowHandle _window;
         private readonly OpenGLContextHandle _nativeContext;
 
         private Vector2i _fbSize;
         private Vector2i _size;
-        private float _pixelRatio;
+        private float _pixelRatio = 1.0f;
 
         public override WindowHandle NativeWindow => _window;
         public override NvgContext Context { get; }
 
-        public OpenGLSurface(WindowHandle window, bool hasStencilBuffer)
+        public OpenGlBackend(WindowHandle window, bool hasStencilBuffer)
         {
             _window = window;
 

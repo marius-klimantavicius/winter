@@ -7,25 +7,25 @@ using OpenTK.Graphics.Vulkan;
 
 namespace NvgSharp.OpenTK.Vulkan;
 
-internal unsafe partial class VkNvgContext
+internal unsafe partial class VulkanContext
 {
-    public VkNvgFrameBuffer FrameBuffer { get; }
+    public VulkanFrameBuffer FrameBuffer { get; }
     private readonly bool _edgeAntiAlias, _stencilStrokes;
 
-    private readonly VkNvgCreateInfo CreateInfo;
+    private readonly VulkanCreateInfo CreateInfo;
 
     private VkPhysicalDeviceProperties DeviceProperties;
     private VkPhysicalDeviceMemoryProperties DeviceMemoryProperties;
 
     // own resources
-    private readonly List<VkNvgTexture> Textures = new List<VkNvgTexture>();
+    private readonly List<VulkanTexture> Textures = new List<VulkanTexture>();
 
     private DescriptorSetLayoutArray DescriptorSetLayout;
     private VkPipelineLayout PipelineLayout;
 
-    private readonly List<VkNvgPipeline> Pipelines = new List<VkNvgPipeline>();
+    private readonly List<VulkanPipeline> Pipelines = new List<VulkanPipeline>();
 
-    private VkNvgVertexConstants VertexConstants;
+    private VulkanVertexConstants VertexConstants;
 
     // Per frame buffers
     private VkDescriptorPool DescriptorPool;
@@ -35,18 +35,18 @@ internal unsafe partial class VkNvgContext
 
     private uint DescriptorPoolCount;
 
-    private readonly List<VkNvgUniformInfo> Uniforms = new List<VkNvgUniformInfo>();
+    private readonly List<VulkanUniformInfo> Uniforms = new List<VulkanUniformInfo>();
 
-    private VkNvgBuffer[]? VertexBuffer;
-    private VkNvgBuffer[] FragUniformBuffer = Array.Empty<VkNvgBuffer>();
+    private VulkanBuffer[]? VertexBuffer;
+    private VulkanBuffer[] FragUniformBuffer = Array.Empty<VulkanBuffer>();
 
-    private VkNvgPipeline? CurrentPipeline;
+    private VulkanPipeline? CurrentPipeline;
 
     private VkShaderModule FillFragShader;
     private VkShaderModule FillVertShader;
     private readonly VkQueue Queue;
 
-    public VkNvgExt Ext;
+    public VulkanExtensions Ext;
 
     private readonly delegate* unmanaged<VkCommandBuffer, VkPrimitiveTopology, void> _vkCmdSetPrimitiveTopologyEXT;
     private readonly delegate* unmanaged<VkCommandBuffer, int, void> _vkCmdSetStencilTestEnableEXT ;
@@ -54,7 +54,7 @@ internal unsafe partial class VkNvgContext
     private readonly delegate* unmanaged<VkCommandBuffer, uint, uint, VkColorBlendEquationEXT*, void> _vkCmdSetColorBlendEquationEXT;
     private readonly delegate* unmanaged<VkCommandBuffer, uint, uint, VkColorComponentFlagBits*, void> _vkCmdSetColorWriteMaskEXT;
 
-    public VkNvgContext(VkNvgCreateInfo createInfo, VkNvgFrameBuffer frameBuffer, VkQueue queue, bool edgeAntiAlias = true, bool stencilStrokes = true)
+    public VulkanContext(VulkanCreateInfo createInfo, VulkanFrameBuffer frameBuffer, VkQueue queue, bool edgeAntiAlias = true, bool stencilStrokes = true)
     {
         CreateInfo = createInfo;
         FrameBuffer = frameBuffer;
@@ -91,8 +91,8 @@ internal unsafe partial class VkNvgContext
         fixed (VkPhysicalDeviceProperties* deviceProperties = &DeviceProperties)
             Vk.GetPhysicalDeviceProperties(CreateInfo.PhysicalDevice, deviceProperties);
 
-        var fillVertShader = VkNvgShaderFillVert.Shader;
-        var fillFragShader = VkNvgShaderFillFrag.Shader;
+        var fillVertShader = VulkanShader.FillVert;
+        var fillFragShader = VulkanShader.FillFrag;
 
         FillVertShader = CreateShaderModule(device, fillVertShader, allocator);
         FillFragShader = CreateShaderModule(device, fillFragShader, allocator);
@@ -268,7 +268,7 @@ internal unsafe partial class VkNvgContext
     {
         VkPushConstantRange pushConstantRange;
         pushConstantRange.offset = 0;
-        pushConstantRange.size = (uint)sizeof(VkNvgVertexConstants);
+        pushConstantRange.size = (uint)sizeof(VulkanVertexConstants);
         pushConstantRange.stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit;
 
         Span<VkDescriptorSetLayout> descriptorSetLayouts = DescriptorSetLayout;

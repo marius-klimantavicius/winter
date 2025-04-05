@@ -1,6 +1,6 @@
 namespace NvgSharp.OpenTK.Vulkan;
 
-internal enum VkNvgStencilSetting
+internal enum VulkanStencilSetting
 {
     Undefined = 0,
     Fill = 1,

@@ -1,78 +1,13 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.InteropServices;
 using OpenTK.Graphics.Vulkan;
 
 namespace NvgSharp.OpenTK.Vulkan;
 
-[StructLayout(LayoutKind.Sequential)]
-public unsafe struct VkNvgUniformInfo
+internal unsafe partial class VulkanContext
 {
-    // std430 implies that vec3 is aligned to 16 bytes
-    // which means that it is the same as 3 * vec4
-    // this is why it is 12 floats instead of 9
-
-    // mat3 scissorMat;
-    public fixed float scissorMat[12];
-
-    // mat3 paintMat;
-    public fixed float paintMat[12];
-
-    // vec4 innerCol;
-    public Vector4 innerCol;
-
-    // vec4 outerCol;
-    public Vector4 outerCol;
-
-    // vec2 scissorExt;
-    public Vector2 scissorExt;
-
-    // vec2 scissorScale;
-    public Vector2 scissorScale;
-
-    // vec2 extent;
-    public Vector2 extent;
-
-    // float radius;
-    public float radius;
-
-    // float feather;
-    public float feather;
-
-    // float strokeMult;
-    public float strokeMult;
-
-    // float strokeThr;
-    public float strokeThr;
-
-    // sampler2D image;
-    public int texType;
-
-    // vec4 imageSize;
-    public RenderType type;
-
-    public static void SetMatrix(float* dest, Matrix4x4 source)
-    {
-        dest[0] = source.M11;
-        dest[1] = source.M12;
-        dest[2] = 0;
-        dest[3] = 0;
-        dest[4] = source.M21;
-        dest[5] = source.M22;
-        dest[6] = 0;
-        dest[7] = 0;
-        dest[8] = source.M41;
-        dest[9] = source.M42;
-        dest[10] = 1;
-        dest[11] = 0;
-    }
-}
-
-internal unsafe partial class VkNvgContext
-{
-    private VkNvgTexture? _fallback;
+    private VulkanTexture? _fallback;
     private VkDescriptorPool[] _destroyPool = Array.Empty<VkDescriptorPool>();
 
     public void Draw(ReadOnlySpan<CallInfo> calls, Vertex[] vertexes)
@@ -89,9 +24,9 @@ internal unsafe partial class VkNvgContext
 
             continue;
 
-            static VkNvgUniformInfo Create(ref UniformInfo info)
+            static VulkanUniformInfo Create(ref UniformInfo info)
             {
-                var result = new VkNvgUniformInfo
+                var result = new VulkanUniformInfo
                 {
                     innerCol = info.innerCol,
                     outerCol = info.outerCol,
@@ -106,8 +41,8 @@ internal unsafe partial class VkNvgContext
                     type = info.type,
                 };
 
-                VkNvgUniformInfo.SetMatrix(result.scissorMat, info.scissorMat);
-                VkNvgUniformInfo.SetMatrix(result.paintMat, info.paintMat);
+                VulkanUniformInfo.SetMatrix(result.scissorMat, info.scissorMat);
+                VulkanUniformInfo.SetMatrix(result.paintMat, info.paintMat);
 
                 return result;
             }
@@ -121,8 +56,8 @@ internal unsafe partial class VkNvgContext
         if (VertexBuffer == null)
         {
             var maxFramesInFlight = FrameBuffer.SwapChainImageCount;
-            VertexBuffer = new VkNvgBuffer[maxFramesInFlight];
-            FragUniformBuffer = new VkNvgBuffer[maxFramesInFlight];
+            VertexBuffer = new VulkanBuffer[maxFramesInFlight];
+            FragUniformBuffer = new VulkanBuffer[maxFramesInFlight];
         }
 
         if (calls.Length > 0)
@@ -132,7 +67,7 @@ internal unsafe partial class VkNvgContext
             UpdateBuffer(device, allocator, ref FragUniformBuffer[currentFrame], memoryProperties, VkBufferUsageFlagBits.BufferUsageStorageBufferBit, flags, Uniforms);
 
             var offsets = 0UL;
-            fixed (VkNvgBuffer* ptr = &VertexBuffer[currentFrame])
+            fixed (VulkanBuffer* ptr = &VertexBuffer[currentFrame])
                 Vk.CmdBindVertexBuffers(CreateInfo.CommandBuffer[currentFrame], 0, 1, &ptr->Buffer, &offsets);
 
             CurrentPipeline = null;
@@ -199,7 +134,7 @@ internal unsafe partial class VkNvgContext
             {
                 buffer = FragUniformBuffer[currentFrame].Buffer,
                 offset = 0,
-                range = (uint)Uniforms.Count * (uint)sizeof(VkNvgUniformInfo),
+                range = (uint)Uniforms.Count * (uint)sizeof(VulkanUniformInfo),
             };
 
             var write_frag_data = new VkWriteDescriptorSet
@@ -261,7 +196,7 @@ internal unsafe partial class VkNvgContext
         var currentFrame = FrameBuffer.CurrentFrame;
         var cmdBuffer = CreateInfo.CommandBuffer[currentFrame];
 
-        var pipelineKey = new VkNvgCreatePipelineKey
+        var pipelineKey = new VulkanCreatePipelineKey
         {
             // Topology = VkPrimitiveTopology.PrimitiveTopologyTriangleStrip,
             Topology = VkPrimitiveTopology.PrimitiveTopologyTriangleFan,
@@ -270,7 +205,7 @@ internal unsafe partial class VkNvgContext
 
         BindPipeline(cmdBuffer, ref pipelineKey);
         SetDynamicState(cmdBuffer, ref pipelineKey);
-        SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VkNvgTexture?)callInfo.UniformInfo.Image);
+        SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VulkanTexture?)callInfo.UniformInfo.Image);
 
         var sets = stackalloc VkDescriptorSet[2] { SsboDescriptorSet[currentFrame], UniformDescriptorSet[descriptor_offset] };
         Vk.CmdBindDescriptorSets(cmdBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, PipelineLayout, 0, 2, sets, 0, null);
@@ -278,7 +213,7 @@ internal unsafe partial class VkNvgContext
         foreach (var item in callInfo.FillStrokeInfos)
             Vk.CmdDraw(cmdBuffer, (uint)item.FillCount, 1, (uint)item.FillOffset, 0);
 
-        SetUniforms(UniformDescriptorSet2[descriptor_offset], uniformOffset + 1, (VkNvgTexture?)callInfo.UniformInfo2.Image);
+        SetUniforms(UniformDescriptorSet2[descriptor_offset], uniformOffset + 1, (VulkanTexture?)callInfo.UniformInfo2.Image);
         sets[1] = UniformDescriptorSet2[descriptor_offset];
         Vk.CmdBindDescriptorSets(cmdBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, PipelineLayout, 0, 2, sets, 0, null);
 
@@ -312,7 +247,7 @@ internal unsafe partial class VkNvgContext
         var currentFrame = FrameBuffer.CurrentFrame;
         var cmdBuffer = CreateInfo.CommandBuffer[currentFrame];
 
-        var pipelineKey = new VkNvgCreatePipelineKey
+        var pipelineKey = new VulkanCreatePipelineKey
         {
             // Topology = VkPrimitiveTopology.PrimitiveTopologyTriangleStrip,
             Topology = VkPrimitiveTopology.PrimitiveTopologyTriangleFan,
@@ -320,7 +255,7 @@ internal unsafe partial class VkNvgContext
 
         BindPipeline(cmdBuffer, ref pipelineKey);
         SetDynamicState(cmdBuffer, ref pipelineKey);
-        SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VkNvgTexture?)callInfo.UniformInfo.Image);
+        SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VulkanTexture?)callInfo.UniformInfo.Image);
 
         var sets = stackalloc VkDescriptorSet[2] { SsboDescriptorSet[currentFrame], UniformDescriptorSet[descriptor_offset] };
         Vk.CmdBindDescriptorSets(cmdBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, PipelineLayout, 0, 2, sets, 0, null);
@@ -351,16 +286,16 @@ internal unsafe partial class VkNvgContext
 
         if (_stencilStrokes)
         {
-            var pipelineKey = new VkNvgCreatePipelineKey
+            var pipelineKey = new VulkanCreatePipelineKey
             {
                 Topology = VkPrimitiveTopology.PrimitiveTopologyTriangleStrip,
                 // Fill stencil with 1 if stencil EQUAL passes
-                StencilStroke = VkNvgStencilSetting.Fill,
+                StencilStroke = VulkanStencilSetting.Fill,
             };
 
             BindPipeline(cmdBuffer, ref pipelineKey);
             SetDynamicState(cmdBuffer, ref pipelineKey);
-            SetUniforms(UniformDescriptorSet2[descriptor_offset], uniformOffset + 1, (VkNvgTexture?)callInfo.UniformInfo2.Image);
+            SetUniforms(UniformDescriptorSet2[descriptor_offset], uniformOffset + 1, (VulkanTexture?)callInfo.UniformInfo2.Image);
 
             var sets = stackalloc VkDescriptorSet[2] { SsboDescriptorSet[currentFrame], UniformDescriptorSet2[descriptor_offset] };
             Vk.CmdBindDescriptorSets(cmdBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, PipelineLayout, 0, 2, sets, 0, null);
@@ -368,11 +303,11 @@ internal unsafe partial class VkNvgContext
             foreach (var item in callInfo.FillStrokeInfos)
                 Vk.CmdDraw(cmdBuffer, (uint)item.StrokeCount, 1, (uint)item.StrokeOffset, 0);
 
-            SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VkNvgTexture?)callInfo.UniformInfo.Image);
+            SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VulkanTexture?)callInfo.UniformInfo.Image);
             sets[1] = UniformDescriptorSet[descriptor_offset];
 
             // Draw AA shape if stencil EQUAL passes
-            pipelineKey.StencilStroke = VkNvgStencilSetting.DrawAA;
+            pipelineKey.StencilStroke = VulkanStencilSetting.DrawAA;
             BindPipeline(cmdBuffer, ref pipelineKey);
             SetDynamicState(cmdBuffer, ref pipelineKey);
             Vk.CmdBindDescriptorSets(cmdBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, PipelineLayout, 0, 2, sets, 0, null);
@@ -381,7 +316,7 @@ internal unsafe partial class VkNvgContext
                 Vk.CmdDraw(cmdBuffer, (uint)item.StrokeCount, 1, (uint)item.StrokeOffset, 0);
 
             // Fill stencil with 0, always
-            pipelineKey.StencilStroke = VkNvgStencilSetting.Clear;
+            pipelineKey.StencilStroke = VulkanStencilSetting.Clear;
             BindPipeline(cmdBuffer, ref pipelineKey);
             SetDynamicState(cmdBuffer, ref pipelineKey);
             Vk.CmdBindDescriptorSets(cmdBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, PipelineLayout, 0, 2, sets, 0, null);
@@ -391,7 +326,7 @@ internal unsafe partial class VkNvgContext
         }
         else
         {
-            var pipelineKey = new VkNvgCreatePipelineKey
+            var pipelineKey = new VulkanCreatePipelineKey
             {
                 StencilFill = false,
                 Topology = VkPrimitiveTopology.PrimitiveTopologyTriangleStrip,
@@ -399,7 +334,7 @@ internal unsafe partial class VkNvgContext
 
             BindPipeline(cmdBuffer, ref pipelineKey);
             SetDynamicState(cmdBuffer, ref pipelineKey);
-            SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VkNvgTexture?)callInfo.UniformInfo.Image);
+            SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VulkanTexture?)callInfo.UniformInfo.Image);
             var sets = stackalloc VkDescriptorSet[2] { SsboDescriptorSet[currentFrame], UniformDescriptorSet[descriptor_offset] };
             Vk.CmdBindDescriptorSets(cmdBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, PipelineLayout, 0, 2, sets, 0, null);
             // Draw Strokes
@@ -420,7 +355,7 @@ internal unsafe partial class VkNvgContext
         var currentFrame = FrameBuffer.CurrentFrame;
         var cmdBuffer = CreateInfo.CommandBuffer[currentFrame];
 
-        var pipelineKey = new VkNvgCreatePipelineKey
+        var pipelineKey = new VulkanCreatePipelineKey
         {
             Topology = VkPrimitiveTopology.PrimitiveTopologyTriangleList,
             StencilFill = false,
@@ -428,14 +363,14 @@ internal unsafe partial class VkNvgContext
 
         BindPipeline(cmdBuffer, ref pipelineKey);
         SetDynamicState(cmdBuffer, ref pipelineKey);
-        SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VkNvgTexture?)callInfo.UniformInfo.Image);
+        SetUniforms(UniformDescriptorSet[descriptor_offset], uniformOffset, (VulkanTexture?)callInfo.UniformInfo.Image);
         var sets = stackalloc VkDescriptorSet[2] { SsboDescriptorSet[currentFrame], UniformDescriptorSet[descriptor_offset] };
         Vk.CmdBindDescriptorSets(cmdBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, PipelineLayout, 0, 2, sets, 0, null);
 
         Vk.CmdDraw(cmdBuffer, (uint)callInfo.TriangleCount, 1, (uint)callInfo.TriangleOffset, 0);
     }
 
-    private void SetDynamicState(VkCommandBuffer cmd, ref VkNvgCreatePipelineKey pipelineKey)
+    private void SetDynamicState(VkCommandBuffer cmd, ref VulkanCreatePipelineKey pipelineKey)
     {
         if (Ext.DynamicState)
             _vkCmdSetPrimitiveTopologyEXT(cmd, pipelineKey.Topology);
@@ -473,14 +408,14 @@ internal unsafe partial class VkNvgContext
         }
     }
 
-    private void SetUniforms(VkDescriptorSet descSet, int uniformOffset, VkNvgTexture? tex)
+    private void SetUniforms(VkDescriptorSet descSet, int uniformOffset, VulkanTexture? tex)
     {
         var device = CreateInfo.Device;
         var currentFrame = FrameBuffer.CurrentFrame;
 
         VertexConstants.UniformOffset = (uint)uniformOffset;
         fixed (void* vertexConstants = &VertexConstants)
-            Vk.CmdPushConstants(CreateInfo.CommandBuffer[currentFrame], PipelineLayout, VkShaderStageFlagBits.ShaderStageVertexBit, 0, (uint)sizeof(VkNvgVertexConstants), vertexConstants);
+            Vk.CmdPushConstants(CreateInfo.CommandBuffer[currentFrame], PipelineLayout, VkShaderStageFlagBits.ShaderStageVertexBit, 0, (uint)sizeof(VulkanVertexConstants), vertexConstants);
 
         tex ??= _fallback!;
         VkDescriptorImageInfo imageInfo = new VkDescriptorImageInfo

@@ -4,7 +4,7 @@ using OpenTK.Graphics.Vulkan;
 namespace NvgSharp.OpenTK.Vulkan;
 
 [StructLayout(LayoutKind.Sequential)]
-internal unsafe struct VkNvgBuffer
+internal unsafe struct VulkanBuffer
 {
     public VkBuffer Buffer;
     public VkDeviceMemory DeviceMemory;
