@@ -5,14 +5,14 @@ using System.Runtime.CompilerServices;
 
 namespace NvgSharp;
 
-internal sealed class ArrayBuilder<T>
+internal class ArrayBuilder<T>
 {
-    private T[] _items;
-    private int _itemsInUse;
-
     private static readonly T[] Empty = Array.Empty<T>();
     private readonly ArrayPool<T> _arrayPool;
     private readonly int _minCapacity;
+
+    protected T[] _items;
+    protected int _itemsInUse;
 
     public int Count => _itemsInUse;
     public T[] Buffer => _items;

@@ -9,21 +9,20 @@ internal class CallInfoBuilder
 
     private CallInfo? _currentCall;
     private int _callFillStrokeIndex;
-    
-    private FillStrokeInfo[] _fillStrokeInfos = new FillStrokeInfo[16];
-    private int _fillStrokeIndex;
 
-    public CallInfo? CurrentCall => _currentCall;
-    
+    private readonly ArrayBuilder<FillStrokeInfo> _fillStrokeInfos = new ArrayBuilder<FillStrokeInfo>();
+
     public CallInfo Add(CallType type)
     {
-        if (_callIndex >= _calls.Length) 
+        if (_callIndex >= _calls.Length)
             Array.Resize(ref _calls, _calls.Length * 2);
 
-        _callFillStrokeIndex = _fillStrokeIndex;
-        
+        _callFillStrokeIndex = _fillStrokeInfos.Count;
+
         _currentCall = _calls[_callIndex] ??= new CallInfo();
-        _currentCall.FillStrokeInfos = default;
+        _currentCall._fillStrokeInfos = _fillStrokeInfos;
+        _currentCall._startIndex = 0;
+        _currentCall._count = 0;
         _currentCall.TriangleCount = 0;
         _currentCall.TriangleOffset = 0;
         _currentCall.UniformInfo = default;
@@ -36,22 +35,22 @@ internal class CallInfoBuilder
 
     public void Add(FillStrokeInfo info)
     {
-        if (_fillStrokeIndex >= _fillStrokeInfos.Length)
-            Array.Resize(ref _fillStrokeInfos, _fillStrokeInfos.Length * 2);
+        _fillStrokeInfos.Append(info);
 
-        _fillStrokeInfos[_fillStrokeIndex] = info;
-        _fillStrokeIndex++;
-        
-        if (_currentCall != null) 
-            _currentCall.FillStrokeInfos = new ReadOnlyMemory<FillStrokeInfo>(_fillStrokeInfos, _callFillStrokeIndex, _fillStrokeIndex - _callFillStrokeIndex);
+        if (_currentCall != null)
+        {
+            _currentCall._fillStrokeInfos = _fillStrokeInfos;
+            _currentCall._startIndex = _callFillStrokeIndex;
+            _currentCall._count = _fillStrokeInfos.Count - _callFillStrokeIndex;
+        }
     }
-    
+
     public void Clear()
     {
         _callIndex = 0;
-        _fillStrokeIndex = 0;
         _callFillStrokeIndex = 0;
         _currentCall = null;
+        _fillStrokeInfos.Clear();
     }
 
     public ReadOnlySpan<CallInfo> AsSpan()

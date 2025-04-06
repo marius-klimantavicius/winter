@@ -49,9 +49,13 @@ public struct FillStrokeInfo
 
 public class CallInfo
 {
+	internal ArrayBuilder<FillStrokeInfo>? _fillStrokeInfos;
+	internal int _startIndex;
+	internal int _count;
+	
 	public CallType Type;
 	public UniformInfo UniformInfo, UniformInfo2;
-	public ReadOnlyMemory<FillStrokeInfo> FillStrokeInfos;
+	public ReadOnlyMemory<FillStrokeInfo> FillStrokeInfos => new ReadOnlyMemory<FillStrokeInfo>(_fillStrokeInfos!.Buffer, _startIndex, _count);
 	public int TriangleOffset;
 	public int TriangleCount;
 }

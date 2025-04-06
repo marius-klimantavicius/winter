@@ -652,7 +652,7 @@ public class NvgContext
             pt = path.LastPoint;
             if (__ptEquals(pt.X, pt.Y, x, y, _distTol) != 0)
             {
-                pt.flags |= flags;
+                pt.Flags |= flags;
                 return;
             }
         }
@@ -661,7 +661,7 @@ public class NvgContext
         pt.Reset();
         pt.X = x;
         pt.Y = y;
-        pt.flags = flags;
+        pt.Flags = flags;
         path.Append(pt);
     }
 
@@ -825,20 +825,20 @@ public class NvgContext
                     p1.dmy *= scale;
                 }
 
-                p1.flags = (p1.flags & PointFlags.Corner) != 0 ? PointFlags.Corner : 0;
+                p1.Flags = (p1.Flags & PointFlags.Corner) != 0 ? PointFlags.Corner : 0;
                 var cross = p1.DeltaX * p0.DeltaY - p0.DeltaX * p1.DeltaY;
                 if (cross > 0.0f)
                 {
                     nleft++;
-                    p1.flags |= PointFlags.Left;
+                    p1.Flags |= PointFlags.Left;
                 }
 
                 var limit = Math.Max(1.01f, Math.Min(p0.Length, p1.Length) * iw);
                 if (dmr2 * limit * limit < 1.0f)
-                    p1.flags |= PointFlags.InnerBevel;
-                if ((p1.flags & PointFlags.Corner) != 0)
+                    p1.Flags |= PointFlags.InnerBevel;
+                if ((p1.Flags & PointFlags.Corner) != 0)
                     if (dmr2 * miterLimit * miterLimit < 1.0f || lineJoin == NvgSharp.LineCap.Bevel || lineJoin == NvgSharp.LineCap.Round)
-                        p1.flags |= PointFlags.Bevel;
+                        p1.Flags |= PointFlags.Bevel;
                 p0Index = p1Index++;
             }
 
@@ -907,7 +907,7 @@ public class NvgContext
             {
                 p0 = ref path[p0Index];
                 p1 = ref path[p1Index];
-                if ((p1.flags & (PointFlags.Bevel | PointFlags.InnerBevel)) != 0)
+                if ((p1.Flags & (PointFlags.Bevel | PointFlags.InnerBevel)) != 0)
                 {
                     if (lineJoin == NvgSharp.LineCap.Round)
                         __roundJoin(p0, p1, w, w, u0, u1, ncap, aa);
@@ -972,13 +972,13 @@ public class NvgContext
                     ref var p0 = ref path[p0Index];
                     ref var p1 = ref path[p1Index];
 
-                    if ((p1.flags & PointFlags.Bevel) != 0)
+                    if ((p1.Flags & PointFlags.Bevel) != 0)
                     {
                         var dlx0 = p0.DeltaY;
                         var dly0 = -p0.DeltaX;
                         var dlx1 = p1.DeltaY;
                         var dly1 = -p1.DeltaX;
-                        if ((p1.flags & PointFlags.Left) != 0)
+                        if ((p1.Flags & PointFlags.Left) != 0)
                         {
                             var lx = p1.X + p1.dmx * woff;
                             var ly = p1.Y + p1.dmy * woff;
@@ -1035,7 +1035,7 @@ public class NvgContext
                     ref var p0 = ref path[p0Index];
                     ref var p1 = ref path[p1Index];
 
-                    if ((p1.flags & (PointFlags.Bevel | PointFlags.InnerBevel)) != 0)
+                    if ((p1.Flags & (PointFlags.Bevel | PointFlags.InnerBevel)) != 0)
                     {
                         __bevelJoin(p0, p1, lw, rw, lu, ru, _fringeWidth);
                     }
@@ -1150,9 +1150,9 @@ public class NvgContext
         var dly0 = -p0.DeltaX;
         var dlx1 = p1.DeltaY;
         var dly1 = -p1.DeltaX;
-        if ((p1.flags & PointFlags.Left) != 0)
+        if ((p1.Flags & PointFlags.Left) != 0)
         {
-            var bounds = __chooseBevel(p1.flags & PointFlags.InnerBevel, p0, p1, lw);
+            var bounds = __chooseBevel(p1.Flags & PointFlags.InnerBevel, p0, p1, lw);
             var a0 = NvgUtility.Atan2F(-dly0, -dlx0);
             var a1 = NvgUtility.Atan2F(-dly1, -dlx1);
             if (a1 > a0)
@@ -1175,7 +1175,7 @@ public class NvgContext
         }
         else
         {
-            var bounds = __chooseBevel(p1.flags & PointFlags.InnerBevel, p0, p1, -rw);
+            var bounds = __chooseBevel(p1.Flags & PointFlags.InnerBevel, p0, p1, -rw);
             var a0 = NvgUtility.Atan2F(dly0, dlx0);
             var a1 = NvgUtility.Atan2F(dly1, dlx1);
             if (a1 < a0)
@@ -1204,12 +1204,12 @@ public class NvgContext
         var dly0 = -p0.DeltaX;
         var dlx1 = p1.DeltaY;
         var dly1 = -p1.DeltaX;
-        if ((p1.flags & PointFlags.Left) != 0)
+        if ((p1.Flags & PointFlags.Left) != 0)
         {
-            var bounds = __chooseBevel(p1.flags & PointFlags.InnerBevel, p0, p1, lw);
+            var bounds = __chooseBevel(p1.Flags & PointFlags.InnerBevel, p0, p1, lw);
             _renderCache.AddVertex(bounds.X, bounds.Y, lu, 1);
             _renderCache.AddVertex(p1.X - dlx0 * rw, p1.Y - dly0 * rw, ru, 1);
-            if ((p1.flags & PointFlags.Bevel) != 0)
+            if ((p1.Flags & PointFlags.Bevel) != 0)
             {
                 _renderCache.AddVertex(bounds.X, bounds.Y, lu, 1);
                 _renderCache.AddVertex(p1.X - dlx0 * rw, p1.Y - dly0 * rw, ru, 1);
@@ -1233,10 +1233,10 @@ public class NvgContext
         }
         else
         {
-            var bounds = __chooseBevel(p1.flags & PointFlags.InnerBevel, p0, p1, -rw);
+            var bounds = __chooseBevel(p1.Flags & PointFlags.InnerBevel, p0, p1, -rw);
             _renderCache.AddVertex(p1.X + dlx0 * lw, p1.Y + dly0 * lw, lu, 1);
             _renderCache.AddVertex(bounds.X, bounds.Y, ru, 1);
-            if ((p1.flags & PointFlags.Bevel) != 0)
+            if ((p1.Flags & PointFlags.Bevel) != 0)
             {
                 _renderCache.AddVertex(p1.X + dlx0 * lw, p1.Y + dly0 * lw, lu, 1);
                 _renderCache.AddVertex(bounds.X, bounds.Y, ru, 1);

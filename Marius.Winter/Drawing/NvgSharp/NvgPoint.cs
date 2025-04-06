@@ -9,11 +9,10 @@ internal struct NvgPoint
 	public float Length;
 	public float dmx;
 	public float dmy;
-	public PointFlags flags;
+	public PointFlags Flags;
 
 	public void Reset()
 	{
-		X = Y = DeltaX = DeltaY = Length = dmx = dmy = 0;
-		flags = 0;
+		this = default;
 	}
 }
