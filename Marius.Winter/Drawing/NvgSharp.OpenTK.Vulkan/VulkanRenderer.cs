@@ -32,7 +32,7 @@ public class VulkanRenderer : INvgRenderer
         _context.UpdateTexture(tex, bounds.X, bounds.Y, bounds.Width, bounds.Height, data);
     }
 
-    public void Draw(float devicePixelRatio, ReadOnlySpan<CallInfo> calls, Vertex[] vertexes)
+    public void Draw(float devicePixelRatio, ReadOnlySpan<CallInfo> calls, ReadOnlySpan<Vertex> vertexes)
     {
         _context.Draw(calls, vertexes);
     }

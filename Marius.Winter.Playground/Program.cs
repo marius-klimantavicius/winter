@@ -210,7 +210,7 @@ internal class Program
 
         while (Toolkit.Window.IsWindowDestroyed(screen.NativeWindow) == false)
         {
-            screen.DrawAll();
+            screen.DrawAll(true);
 
             Toolkit.Window.ProcessEvents(false);
         }

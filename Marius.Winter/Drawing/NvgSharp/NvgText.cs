@@ -39,7 +39,7 @@ public static class NvgText
                 FlushText();
             }
 
-            var state = _context._currentState;
+            ref var state = ref _context._currentState;
 
             state.Transform.TransformPoint(out var px, out var py, topLeft.Position.X, topLeft.Position.Y);
             px = (int)px;
@@ -80,7 +80,7 @@ public static class NvgText
                 return;
             }
 
-            var state = _context._currentState;
+            ref var state = ref _context._currentState;
             var paint = state.Fill;
             paint.Image = _lastTextTexture;
 

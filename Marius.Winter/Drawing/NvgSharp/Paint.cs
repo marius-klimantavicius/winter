@@ -14,7 +14,7 @@ public struct Paint
 	public float Feather;
 	public Color InnerColor;
 	public Color OuterColor;
-	public Texture2D Image;
+	public Texture2D? Image;
 		
 	public Paint(Color color)
 	{

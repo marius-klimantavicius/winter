@@ -1,6 +1,6 @@
 ﻿namespace NvgSharp;
 
-internal class NvgPoint
+internal struct NvgPoint
 {
 	public float X;
 	public float Y;
@@ -9,7 +9,7 @@ internal class NvgPoint
 	public float Length;
 	public float dmx;
 	public float dmy;
-	public byte flags;
+	public PointFlags flags;
 
 	public void Reset()
 	{

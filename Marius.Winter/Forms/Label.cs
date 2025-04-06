@@ -66,7 +66,6 @@ public class Label : Widget
         _captionLayout.SupportsCommands = false;
         _captionLayout.Text = _caption;
         _captionLayout.Font = font;
-        _captionLayout.Width = null;
 
         var bounds = _captionLayout.Measure(null);
         return new Vector2i(bounds.X, bounds.Y);

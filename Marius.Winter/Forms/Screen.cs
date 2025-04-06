@@ -206,9 +206,9 @@ public class Screen : Widget
         _backend.SubmitFrame();
     }
 
-    public virtual void DrawAll()
+    public virtual void DrawAll(bool forceDraw = false)
     {
-        if (_redrawRequested || TooltipFadeInProgress())
+        if (_redrawRequested || forceDraw || TooltipFadeInProgress())
         {
             _redrawRequested = false;
 

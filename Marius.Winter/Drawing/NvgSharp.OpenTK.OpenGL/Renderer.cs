@@ -64,16 +64,16 @@ public class Renderer : INvgRenderer
 
     private void SetUniform(ref UniformInfo uniform)
     {
-        _shader.SetUniform("scissorMat", uniform.scissorMat);
-        _shader.SetUniform("paintMat", uniform.paintMat);
-        _shader.SetUniform("innerCol", uniform.innerCol);
-        _shader.SetUniform("outerCol", uniform.outerCol);
-        _shader.SetUniform("scissorExt", uniform.scissorExt);
-        _shader.SetUniform("scissorScale", uniform.scissorScale);
-        _shader.SetUniform("extent", uniform.extent);
-        _shader.SetUniform("radius", uniform.radius);
-        _shader.SetUniform("feather", uniform.feather);
-        _shader.SetUniform("type", (int)uniform.type);
+        _shader.SetUniform("scissorMat", uniform.ScissorMatrix);
+        _shader.SetUniform("paintMat", uniform.PaintMatrix);
+        _shader.SetUniform("innerCol", uniform.InnerColor);
+        _shader.SetUniform("outerCol", uniform.OuterColor);
+        _shader.SetUniform("scissorExt", uniform.ScissorExtent);
+        _shader.SetUniform("scissorScale", uniform.ScissorScale);
+        _shader.SetUniform("extent", uniform.Extent);
+        _shader.SetUniform("radius", uniform.Radius);
+        _shader.SetUniform("feather", uniform.Feather);
+        _shader.SetUniform("type", (int)uniform.Type);
 
         if (uniform.Image != null)
         {
@@ -88,8 +88,8 @@ public class Renderer : INvgRenderer
 
         if (_edgeAntiAlias)
         {
-            _shader.SetUniform("strokeMult", uniform.strokeMult);
-            _shader.SetUniform("strokeThr", uniform.strokeThr);
+            _shader.SetUniform("strokeMult", uniform.StrokeMult);
+            _shader.SetUniform("strokeThr", uniform.StrokeThr);
         }
     }
 
@@ -116,10 +116,8 @@ public class Renderer : INvgRenderer
         GL.Disable(EnableCap.CullFace);
         GLUtility.CheckError();
 
-        for (var i = 0; i < call.FillStrokeInfos.Count; i++)
-        {
-            call.FillStrokeInfos[i].DrawFill(PrimitiveType.TriangleFan);
-        }
+        foreach (var item in call.FillStrokeInfos.Span)
+            item.DrawFill(PrimitiveType.TriangleFan);
 
         GL.Enable(EnableCap.CullFace);
         GLUtility.CheckError();
@@ -138,10 +136,8 @@ public class Renderer : INvgRenderer
             GLUtility.CheckError();
 
             // Draw fringes
-            for (var i = 0; i < call.FillStrokeInfos.Count; i++)
-            {
-                call.FillStrokeInfos[i].DrawStroke(PrimitiveType.TriangleStrip);
-            }
+            foreach (var item in call.FillStrokeInfos.Span)
+                item.DrawStroke(PrimitiveType.TriangleStrip);
         }
 
         // Draw fill
@@ -160,10 +156,8 @@ public class Renderer : INvgRenderer
     {
         SetUniform(ref call.UniformInfo);
 
-        for (var i = 0; i < call.FillStrokeInfos.Count; i++)
+        foreach (var fillStrokeInfo in call.FillStrokeInfos.Span)
         {
-            var fillStrokeInfo = call.FillStrokeInfos[i];
-
             fillStrokeInfo.DrawFill(PrimitiveType.TriangleFan);
             fillStrokeInfo.DrawStroke(PrimitiveType.TriangleStrip);
         }
@@ -185,10 +179,8 @@ public class Renderer : INvgRenderer
 
             SetUniform(ref call.UniformInfo2);
 
-            for (var i = 0; i < call.FillStrokeInfos.Count; i++)
-            {
-                call.FillStrokeInfos[i].DrawStroke(PrimitiveType.TriangleStrip);
-            }
+            foreach (var item in call.FillStrokeInfos.Span)
+                item.DrawStroke(PrimitiveType.TriangleStrip);
 
             // Draw anti-aliased pixels.
             SetUniform(ref call.UniformInfo);
@@ -198,10 +190,8 @@ public class Renderer : INvgRenderer
             GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Keep);
             GLUtility.CheckError();
 
-            for (var i = 0; i < call.FillStrokeInfos.Count; i++)
-            {
-                call.FillStrokeInfos[i].DrawStroke(PrimitiveType.TriangleStrip);
-            }
+            foreach (var item in call.FillStrokeInfos.Span)
+                item.DrawStroke(PrimitiveType.TriangleStrip);
 
             // Clear stencil buffer.
             GL.ColorMask(false, false, false, false);
@@ -212,10 +202,8 @@ public class Renderer : INvgRenderer
             GL.StencilOp(StencilOp.Zero, StencilOp.Zero, StencilOp.Zero);
             GLUtility.CheckError();
 
-            for (var i = 0; i < call.FillStrokeInfos.Count; i++)
-            {
-                call.FillStrokeInfos[i].DrawStroke(PrimitiveType.TriangleStrip);
-            }
+            foreach (var item in call.FillStrokeInfos.Span)
+                item.DrawStroke(PrimitiveType.TriangleStrip);
 
             GL.ColorMask(true, true, true, true);
             GLUtility.CheckError();
@@ -227,10 +215,8 @@ public class Renderer : INvgRenderer
         {
             SetUniform(ref call.UniformInfo);
 
-            for (var i = 0; i < call.FillStrokeInfos.Count; i++)
-            {
-                call.FillStrokeInfos[i].DrawStroke(PrimitiveType.TriangleStrip);
-            }
+            foreach (var item in call.FillStrokeInfos.Span)
+                item.DrawStroke(PrimitiveType.TriangleStrip);
         }
     }
 
@@ -241,7 +227,7 @@ public class Renderer : INvgRenderer
         call.DrawTriangles(PrimitiveType.Triangles);
     }
 
-    public void Draw(float devicePixelRatio, ReadOnlySpan<CallInfo> calls, Vertex[] vertexes)
+    public void Draw(float devicePixelRatio, ReadOnlySpan<CallInfo> calls, ReadOnlySpan<Vertex> vertexes)
     {
         // Setup required GL state
         GL.Enable(EnableCap.CullFace);
@@ -276,7 +262,7 @@ public class Renderer : INvgRenderer
         }
 
         _vertexBuffer.Bind();
-        _vertexBuffer.SetData(vertexes, 0, vertexes.Length);
+        _vertexBuffer.SetData(vertexes);
 
         // Setup vao
         _vao.Bind();

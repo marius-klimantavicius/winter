@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using Matrix = System.Numerics.Matrix4x4;
@@ -25,19 +24,19 @@ public enum RenderType
 
 public struct UniformInfo
 {
-	public Matrix scissorMat;
-	public Matrix paintMat;
-	public Vector4 innerCol;
-	public Vector4 outerCol;
-	public Vector2 scissorExt;
-	public Vector2 scissorScale;
-	public Vector2 extent;
-	public float radius;
-	public float feather;
-	public float strokeMult;
-	public float strokeThr;
-	public Texture2D Image;
-	public RenderType type;
+	public Matrix ScissorMatrix;
+	public Matrix PaintMatrix;
+	public Vector4 InnerColor;
+	public Vector4 OuterColor;
+	public Vector2 ScissorExtent;
+	public Vector2 ScissorScale;
+	public Vector2 Extent;
+	public float Radius;
+	public float Feather;
+	public float StrokeMult;
+	public float StrokeThr;
+	public Texture2D? Image;
+	public RenderType Type;
 }
 
 public struct FillStrokeInfo
@@ -52,7 +51,7 @@ public class CallInfo
 {
 	public CallType Type;
 	public UniformInfo UniformInfo, UniformInfo2;
-	public readonly List<FillStrokeInfo> FillStrokeInfos = new List<FillStrokeInfo>();
+	public ReadOnlyMemory<FillStrokeInfo> FillStrokeInfos;
 	public int TriangleOffset;
 	public int TriangleCount;
 }
@@ -81,5 +80,5 @@ public interface INvgRenderer
 	/// <param name="data"></param>
 	void SetTextureData(object texture, Rectangle bounds, byte[] data);
 
-	void Draw(float devicePixelRatio, ReadOnlySpan<CallInfo> calls, Vertex[] vertexes);
+	void Draw(float devicePixelRatio, ReadOnlySpan<CallInfo> calls, ReadOnlySpan<Vertex> vertexes);
 }

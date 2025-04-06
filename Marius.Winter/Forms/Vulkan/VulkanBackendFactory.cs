@@ -281,12 +281,13 @@ public unsafe class VulkanBackendFactory : BackendFactory
             }
         }
 
-        *enabledExtensions++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.KhrSwapchainExtensionName);
+        var ee = enabledExtensions;
+        *ee++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.KhrSwapchainExtensionName);
         if (enableDynamicState)
-            *enabledExtensions++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.ExtExtendedDynamicStateExtensionName);
+            *ee++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.ExtExtendedDynamicStateExtensionName);
 
         if (enableDynamicState3)
-            *enabledExtensions++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.ExtExtendedDynamicState3ExtensionName);
+            *ee++ = (byte*)Marshal.StringToCoTaskMemUTF8(Vk.ExtExtendedDynamicState3ExtensionName);
 
         var deviceInfo = new VkDeviceCreateInfo
         {

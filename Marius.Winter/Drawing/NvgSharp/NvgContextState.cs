@@ -1,9 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿namespace NvgSharp;
 
-namespace NvgSharp;
-
-[StructLayout(LayoutKind.Sequential)]
-internal class NvgContextState
+internal struct NvgContextState
 {
 	public int ShapeAntiAlias;
 	public Paint Fill;
@@ -13,7 +10,7 @@ internal class NvgContextState
 	public LineCap LineJoin;
 	public LineCap LineCap;
 	public float Alpha;
-	public Transform Transform = new Transform();
+	public Transform Transform;
 	public Scissor Scissor;
 
 	public NvgContextState Clone()
