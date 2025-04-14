@@ -112,6 +112,7 @@ internal class Program
             TabsCloseable = true,
             Position = new Vector2i(300, 300),
         };
+        tabs.AppendTab("ColorWheel", new ColorPicker(tabs, caption: "Selekt ze kolor"));
         tabs.AppendTab("Slide", new Slider(tabs));
         tabs.AppendTab("Number", new NumberBox<float>(tabs)
         {

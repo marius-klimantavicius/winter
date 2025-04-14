@@ -349,7 +349,7 @@ public class Widget
             var contained = child.Contains(position - _position);
             var prevContained = child.Contains(position - _position - relative);
             if (contained != prevContained)
-                handled |= child.OnMouseEnter(position, contained);
+                handled |= child.OnMouseEnter(position - _position, contained);
 
             if (contained || prevContained)
                 handled |= child.OnMouseMove(position - _position, relative, mouseState, modifiers);

@@ -23,8 +23,8 @@ public class ComboBox : PopupButton
                 return;
 
             var children = _container.Children;
-            ((Button)children[_selectedIndex]).Pressed = false;
-            ((Button)children[value]).Pressed = true;
+            ((Button)children[_selectedIndex]).IsPressed = false;
+            ((Button)children[value]).IsPressed = true;
             _selectedIndex = value;
             Caption = _itemsShort[value];
         }
@@ -92,7 +92,7 @@ public class ComboBox : PopupButton
             {
                 _selectedIndex = scopedIndex;
                 Caption = _itemsShort[scopedIndex];
-                Pressed = false;
+                IsPressed = false;
                 Popup.IsVisible = false;
 
                 Changed?.Invoke(this, scopedIndex);
@@ -105,7 +105,7 @@ public class ComboBox : PopupButton
 
     public override bool OnScroll(Vector2i position, Vector2 distance, Vector2 relative)
     {
-        Pressed = false;
+        IsPressed = false;
         Popup.IsVisible = false;
         if (relative.Y < 0)
         {

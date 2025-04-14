@@ -55,7 +55,7 @@ public class Button : Widget
         set => _iconPosition = value;
     }
 
-    public bool Pressed
+    public bool IsPressed
     {
         get => _isPressed;
         set => _isPressed = value;
