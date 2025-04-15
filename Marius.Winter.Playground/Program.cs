@@ -121,6 +121,12 @@ internal class Program
             IsEditable = true,
         });
 
+        var cw = new ColorWheel(screen)
+        {
+            Position = new Vector2i(100, 300),
+        };
+        new ScrollBar(cw);
+        
         var gridLayout = new AdvancedGridLayout([50, 100, 30], [30, 50, 50, 50, 50]);
         var window = new Window(screen)
         {
